@@ -5,13 +5,15 @@
 //  Created by zzzzych on 7/24/25.
 //
 
-
 import Fluent
 import Vapor
+import Foundation
 
 /// 청첩장 관련 API를 처리하는 컨트롤러 (수정/삭제 기능 추가)
 struct InvitationController: RouteCollection {
     
+    /// 라우트 등록 함수 - 이 컨트롤러가 처리할 API 경로들을 정의합니다
+    /// - Parameter routes: 라우트 빌더 객체
     func boot(routes: any RoutesBuilder) throws {
         let api = routes.grouped("api")
         
@@ -24,50 +26,63 @@ struct InvitationController: RouteCollection {
         
         // 그룹 관리 API들
         admin.post("groups", use: createGroup)                    // 그룹 생성
-        admin.get("groups", use: getAllGroups)                    // 전체 그룹 목록 조회 ✨ 새로 추가
-        admin.get("groups", ":groupId", use: getGroup)            // 특정 그룹 조회 ✨ 새로 추가
-        admin.put("groups", ":groupId", use: updateGroup)         // 그룹 수정 ✨ 새로 추가
-        admin.delete("groups", ":groupId", use: deleteGroup)      // 그룹 삭제 ✨ 새로 추가
+        admin.get("groups", use: getAllGroups)                    // 전체 그룹 목록 조회
+        admin.get("groups", ":groupId", use: getGroup)            // 특정 그룹 조회
+        admin.put("groups", ":groupId", use: updateGroup)         // 그룹 수정
+        admin.delete("groups", ":groupId", use: deleteGroup)      // 그룹 삭제
     }
     
-    // MARK: - 기존 기능들
+    // MARK: - 하객용 API 기능들
     
     /// 고유 코드로 청첩장 정보 조회 (하객용)
+    /// 하객이 고유 링크를 통해 접속했을 때 그룹에 맞는 청첩장 정보를 제공합니다
+    /// - Parameter req: HTTP 요청 객체 (uniqueCode 파라미터 포함)
+    /// - Returns: 그룹별로 필터링된 청첩장 응답 데이터
     func getInvitation(req: Request) async throws -> InvitationResponse {
         // 1. URL에서 uniqueCode 파라미터 추출
+        // 예: /api/invitation/ABC123DEF 에서 ABC123DEF 부분
         guard let uniqueCode = req.parameters.get("uniqueCode") else {
             throw Abort(.badRequest, reason: "고유 코드가 필요합니다.")
         }
         
         // 2. uniqueCode로 초대 그룹 찾기
+        // 데이터베이스에서 해당 고유 코드를 가진 그룹을 검색합니다
         guard let invitationGroup = try await InvitationGroup.query(on: req.db)
             .filter(\.$uniqueCode == uniqueCode)
             .first() else {
             throw Abort(.notFound, reason: "유효하지 않은 초대 코드입니다.")
         }
         
-        // 3. 결혼식 정보 조회
+        // 3. 결혼식 기본 정보 조회
         guard let weddingInfo = try await WeddingInfo.query(on: req.db)
             .first() else {
             throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
         }
         
         // 4. 그룹별로 필터링된 응답 생성
+        // 각 그룹 타입에 따라 보여줄 정보를 다르게 필터링합니다
         let response = InvitationResponse.create(from: weddingInfo, and: invitationGroup)
         return response
     }
     
+    // MARK: - 관리자용 그룹 관리 API 기능들
+    
     /// 새로운 초대 그룹 생성 (관리자용)
+    /// 관리자가 새로운 초대 그룹을 만들고 고유 링크를 생성합니다
+    /// - Parameter req: HTTP 요청 객체 (그룹 생성 데이터 포함)
+    /// - Returns: 생성된 초대 그룹 정보 (고유 코드 포함)
     func createGroup(req: Request) async throws -> InvitationGroup {
         // 1. 요청 데이터 파싱
         let createRequest = try req.content.decode(CreateGroupRequest.self)
         
         // 2. 그룹 타입 유효성 검사
+        // 정의된 그룹 타입(WEDDING_GUEST, PARENTS_GUEST, COMPANY_GUEST) 중 하나인지 확인
         guard GroupType(rawValue: createRequest.groupType) != nil else {
             throw Abort(.badRequest, reason: "유효하지 않은 그룹 타입입니다.")
         }
         
         // 3. 그룹 이름 중복 검사
+        // 같은 이름의 그룹이 이미 있는지 확인합니다
         let existingGroup = try await InvitationGroup.query(on: req.db)
             .filter(\.$groupName == createRequest.groupName)
             .first()
@@ -76,7 +91,8 @@ struct InvitationController: RouteCollection {
             throw Abort(.conflict, reason: "이미 존재하는 그룹 이름입니다.")
         }
         
-        // 4. 새 초대 그룹 생성 (uniqueCode는 자동 생성됨)
+        // 4. 새 초대 그룹 생성
+        // uniqueCode는 InvitationGroup의 생성자에서 자동으로 생성됩니다
         let newGroup = InvitationGroup(
             groupName: createRequest.groupName,
             groupType: createRequest.groupType
@@ -87,9 +103,10 @@ struct InvitationController: RouteCollection {
         return newGroup
     }
     
-    // MARK: - ✨ 새로 추가된 관리자 기능들
-    
     /// 전체 그룹 목록 조회 (관리자용)
+    /// 관리자가 모든 그룹의 목록과 각 그룹별 응답 통계를 확인할 수 있습니다
+    /// - Parameter req: HTTP 요청 객체
+    /// - Returns: 통계 정보가 포함된 그룹 목록
     func getAllGroups(req: Request) async throws -> GroupsListResponse {
         // 1. 모든 그룹 조회
         let allGroups = try await InvitationGroup.query(on: req.db)
@@ -100,7 +117,7 @@ struct InvitationController: RouteCollection {
         var groupsWithStats: [GroupWithStats] = []
         
         for group in allGroups {
-            // 해당 그룹의 응답 수 계산
+            // 해당 그룹의 총 응답 수 계산
             let responseCount = try await RsvpResponse.query(on: req.db)
                 .filter(\.$group.$id == group.id!)
                 .count()
@@ -111,6 +128,7 @@ struct InvitationController: RouteCollection {
                 .filter(\.$isAttending == true)
                 .count()
             
+            // 통계 정보가 포함된 그룹 데이터 생성
             let groupWithStats = GroupWithStats(
                 id: group.id!,
                 groupName: group.groupName,
@@ -130,8 +148,12 @@ struct InvitationController: RouteCollection {
     }
     
     /// 특정 그룹 상세 조회 (관리자용)
+    /// 관리자가 특정 그룹의 상세 정보와 모든 응답을 확인할 수 있습니다
+    /// - Parameter req: HTTP 요청 객체 (groupId 파라미터 포함)
+    /// - Returns: 그룹 상세 정보와 응답 목록
     func getGroup(req: Request) async throws -> GroupDetailResponse {
         // 1. URL에서 groupId 파라미터 추출
+        // 예: /api/admin/groups/550e8400-e29b-41d4-a716-446655440000
         guard let groupIdString = req.parameters.get("groupId"),
               let groupId = UUID(uuidString: groupIdString) else {
             throw Abort(.badRequest, reason: "유효하지 않은 그룹 ID입니다.")
@@ -148,31 +170,31 @@ struct InvitationController: RouteCollection {
             .sort(\.$createdAt) // 응답 시간순으로 정렬
             .all()
         
-        // 4. 응답 데이터 변환
+        // 4. 응답 데이터 변환 (SimpleRsvpResponse 타입으로)
         let responseData = responses.map { response in
-            RsvpResponseData(
-                id: response.id,
-                responderName: response.responderName,
-                isAttending: response.isAttending,
-                adultCount: response.adultCount,
-                childrenCount: response.childrenCount,
-                submittedAt: response.createdAt
-            )
+            SimpleRsvpResponse.from(response)
         }
+        
+        // 5. 통계 정보 계산
+        let attendingResponses = responses.filter { $0.isAttending }
+        let statistics = GroupStatistics(
+            totalResponses: responses.count,
+            attendingCount: attendingResponses.count,
+            totalAdults: attendingResponses.reduce(0) { $0 + $1.adultCount },
+            totalChildren: attendingResponses.reduce(0) { $0 + $1.childrenCount }
+        )
         
         return GroupDetailResponse(
             group: group,
             responses: responseData,
-            statistics: GroupStatistics(
-                totalResponses: responses.count,
-                attendingCount: responses.filter { $0.isAttending }.count,
-                totalAdults: responses.filter { $0.isAttending }.reduce(0) { $0 + $1.adultCount },
-                totalChildren: responses.filter { $0.isAttending }.reduce(0) { $0 + $1.childrenCount }
-            )
+            statistics: statistics
         )
     }
     
     /// 그룹 정보 수정 (관리자용)
+    /// 관리자가 기존 그룹의 이름이나 타입을 변경할 수 있습니다
+    /// - Parameter req: HTTP 요청 객체 (groupId 파라미터와 수정 데이터 포함)
+    /// - Returns: 수정된 그룹 정보
     func updateGroup(req: Request) async throws -> InvitationGroup {
         // 1. URL에서 groupId 파라미터 추출
         guard let groupIdString = req.parameters.get("groupId"),
@@ -194,9 +216,10 @@ struct InvitationController: RouteCollection {
         }
         
         // 5. 그룹 이름 중복 검사 (자신 제외)
+        // 다른 그룹이 같은 이름을 사용하고 있는지 확인합니다
         let existingGroup = try await InvitationGroup.query(on: req.db)
             .filter(\.$groupName == updateRequest.groupName)
-            .filter(\.$id != groupId)
+            .filter(\.$id != groupId) // 자신은 제외
             .first()
         
         if existingGroup != nil {
@@ -214,6 +237,9 @@ struct InvitationController: RouteCollection {
     }
     
     /// 그룹 삭제 (관리자용)
+    /// 관리자가 그룹을 삭제할 수 있습니다. 응답이 있는 그룹은 강제 삭제 옵션이 필요합니다
+    /// - Parameter req: HTTP 요청 객체 (groupId 파라미터, 선택적으로 force 쿼리 파라미터)
+    /// - Returns: HTTP 상태 코드 (204 No Content)
     func deleteGroup(req: Request) async throws -> HTTPStatus {
         // 1. URL에서 groupId 파라미터 추출
         guard let groupIdString = req.parameters.get("groupId"),
@@ -233,7 +259,7 @@ struct InvitationController: RouteCollection {
         
         // 4. 응답이 있는 경우 확인 요청
         if responseCount > 0 {
-            // 강제 삭제 플래그 확인
+            // 강제 삭제 플래그 확인 (?force=true 쿼리 파라미터)
             let forceDelete = req.query[Bool.self, at: "force"] ?? false
             
             if !forceDelete {
@@ -241,6 +267,7 @@ struct InvitationController: RouteCollection {
             }
             
             // 5. 관련 응답들 먼저 삭제 (외래키 제약조건 때문)
+            // 자식 테이블(응답)을 먼저 삭제해야 부모 테이블(그룹)을 삭제할 수 있습니다
             try await RsvpResponse.query(on: req.db)
                 .filter(\.$group.$id == groupId)
                 .delete()
@@ -249,51 +276,6 @@ struct InvitationController: RouteCollection {
         // 6. 그룹 삭제
         try await group.delete(on: req.db)
         
-        return .noContent // 204 No Content
+        return .noContent // 204 No Content - 성공적으로 삭제되었음을 나타냄
     }
-}
-
-// MARK: - Request/Response Models
-
-/// 그룹 생성 요청 데이터
-struct CreateGroupRequest: Content {
-    let groupName: String    // 그룹 이름 (예: "신랑 대학 동기")
-    let groupType: String    // 그룹 타입 (예: "WEDDING_GUEST")
-}
-
-/// 그룹 수정 요청 데이터
-struct UpdateGroupRequest: Content {
-    let groupName: String    // 새로운 그룹 이름
-    let groupType: String    // 새로운 그룹 타입
-}
-
-/// 통계 정보가 포함된 그룹 데이터
-struct GroupWithStats: Content {
-    let id: UUID
-    let groupName: String
-    let groupType: String
-    let uniqueCode: String
-    let totalResponses: Int      // 총 응답 수
-    let attendingResponses: Int  // 참석 응답 수
-}
-
-/// 전체 그룹 목록 응답
-struct GroupsListResponse: Content {
-    let totalGroups: Int
-    let groups: [GroupWithStats]
-}
-
-/// 그룹 통계 정보
-struct GroupStatistics: Content {
-    let totalResponses: Int    // 총 응답 수
-    let attendingCount: Int    // 참석 응답 수
-    let totalAdults: Int       // 총 성인 인원
-    let totalChildren: Int     // 총 자녀 인원
-}
-
-/// 그룹 상세 정보 응답
-struct GroupDetailResponse: Content {
-    let group: InvitationGroup
-    let responses: [RsvpResponseData]
-    let statistics: GroupStatistics
 }
