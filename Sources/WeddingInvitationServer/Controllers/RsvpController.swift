@@ -17,15 +17,14 @@ struct RsvpController: RouteCollection {
         // POST /api/invitation/:uniqueCode/rsvp - 참석 여부 응답 제출 (인증 불필요)
         api.post("invitation", ":uniqueCode", "rsvp", use: submitRsvp)
         
-        // 관리자 전용 라우트 (JWT 인증 필요)
+        // 관리자 전용 라우트 (임시로 인증 미들웨어 제거)
         let admin = api.grouped("admin")
-            .grouped(AdminAuthMiddleware())  // ← JWT 인증 미들웨어 추가
         admin.get("rsvps", use: getAllRsvps)
     }
     
     // MARK: - POST /api/invitation/:uniqueCode/rsvp
     /// 참석 여부 응답 제출
-    func submitRsvp(req: Request) async throws -> RsvpResponse {
+    func submitRsvp(req: Request) async throws -> RsvpResponseData {
         // 1. URL에서 uniqueCode 파라미터 추출
         guard let uniqueCode = req.parameters.get("uniqueCode") else {
             throw Abort(.badRequest, reason: "고유 코드가 필요합니다.")

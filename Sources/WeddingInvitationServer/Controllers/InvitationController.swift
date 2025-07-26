@@ -4,6 +4,7 @@
 //
 //  Created by zzzzych on 7/24/25.
 //
+
 import Fluent
 import Vapor
 
@@ -16,9 +17,8 @@ struct InvitationController: RouteCollection {
         // GET /api/invitation/:uniqueCode - 고유 코드로 청첩장 정보 조회 (인증 불필요)
         api.get("invitation", ":uniqueCode", use: getInvitation)
         
-        // 관리자 전용 라우트 (JWT 인증 필요)
+        // 관리자 전용 라우트 (임시로 인증 미들웨어 제거)
         let admin = api.grouped("admin")
-            .grouped(AdminAuthMiddleware())  // ← JWT 인증 미들웨어 추가
         admin.post("groups", use: createGroup)
     }
     

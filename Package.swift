@@ -12,13 +12,12 @@ let package = Package(
         
         // 🗄️ An ORM for Swift and Vapor. (데이터베이스 작업을 위한 Fluent)
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
-        
         // SQLite3 driver for Fluent. (개발용 데이터베이스 드라이버)
         .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"),
         
-        // 보안 라이브러리
+        // --- [보안 라이브러리 추가] ---
         // 🔐 JWT tokens in Swift
-            .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/jwt-kit.git", from: "4.0.0"),
         
         // 🔒 Bcrypt hashing for Vapor
         // Note: Bcrypt는 Vapor 4에 내장되어 있어 별도 패키지 불필요
@@ -31,7 +30,6 @@ let package = Package(
             name: "WeddingInvitationServer",
             dependencies: [
                 .product(name: "Vapor", package: "vapor"),
-                
                 .product(name: "Fluent", package: "fluent"),
                 .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"),
                 

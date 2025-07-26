@@ -4,9 +4,9 @@ import Vapor
 import JWTKit
 
 public func configure(_ app: Application) async throws {
-    // --- [JWT 설정 - 나중에 관리자 로그인 API 구현 시 활성화] ---
-     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-change-in-production"
-     app.jwt.signers.use(.hs256(key: Data(jwtSecret.utf8)))
+    // --- [JWT 설정 - 임시 주석 처리] ---
+    // let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-change-in-production"
+    // app.jwt.signers.use(.hs256(key: Data(jwtSecret.utf8)))
     
     // --- [새로 추가: CORS 설정] ---
     // 프론트엔드와의 연동을 위한 CORS 설정
