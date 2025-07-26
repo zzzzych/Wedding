@@ -1,26 +1,35 @@
 import Fluent
 import FluentSQLiteDriver
 import Vapor
+import JWTKit
 
-// configure(_:) 함수는 Vapor 애플리케이션이 시작되기 전에 호출되어
-// 필요한 모든 서비스와 설정을 등록하는 역할을 합니다.
-// configures your application
 public func configure(_ app: Application) async throws {
-    // uncomment to serve files from /Public folder
-    // app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    // --- [JWT 설정 - 나중에 관리자 로그인 API 구현 시 활성화] ---
+     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-change-in-production"
+     app.jwt.signers.use(.hs256(key: Data(jwtSecret.utf8)))
+    
+    // --- [새로 추가: CORS 설정] ---
+    // 프론트엔드와의 연동을 위한 CORS 설정
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .all,  // 개발용 - 운영시에는 특정 도메인으로 제한
+        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .PATCH],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith]
+    )
+    app.middleware.use(CORSMiddleware(configuration: corsConfiguration))
+    
+    // --- [기존 코드] ---
+    // 정적 파일 서빙 (Public 폴더)
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
 
-    // 1. 데이터베이스 설정
-    // 우리 앱의 데이터베이스로 SQLite를 사용하겠다고 등록합니다.
-    // .sqlite(.file("db.sqlite")): 데이터는 프로젝트 폴더에 생성될 "db.sqlite"라는 파일에 저장됩니다.
-    // as: .sqlite: 이 데이터베이스를 앞으로 ".sqlite"라는 ID로 부르겠다고 별명을 지어줍니다.
+    // 데이터베이스 설정
     app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
 
-    // 2. 마이그레이션 등록
-    // 우리가 Migrations 폴더에 만들었던 CreateWeddingSchema를
-    // 앱이 실행해야 할 마이그레이션 목록에 추가합니다.
+    // 마이그레이션 등록
     app.migrations.add(CreateWeddingSchema())
+    
+    // --- [새로 추가: 초기 관리자 계정 생성을 위한 마이그레이션] ---
+    app.migrations.add(CreateInitialAdminUser())
 
-    // 3. 라우트 등록
-    // routes.swift 파일에 정의된 API 경로들을 앱에 등록합니다.
+    // 라우트 등록
     try routes(app)
 }

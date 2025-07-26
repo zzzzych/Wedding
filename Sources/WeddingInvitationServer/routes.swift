@@ -12,8 +12,9 @@ func routes(_ app: Application) throws {
         "Hello, world!"
     }
 
-    // --- [추가된 부분] ---
-    // 우리가 만든 WeddingController를 앱에 등록합니다.
-    // 이제 앱은 WeddingController 안에 어떤 기능들이 있는지 알게 됩니다.
+    // 컨트롤러 등록
     try app.register(collection: WeddingController())
+    try app.register(collection: InvitationController())
+    try app.register(collection: RsvpController())
+    try app.register(collection: AdminController())  // ← 새로 추가
 }
