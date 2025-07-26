@@ -24,11 +24,15 @@ public func configure(_ app: Application) async throws {
     // 데이터베이스 설정
     app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
 
+    
     // 마이그레이션 등록
     app.migrations.add(CreateWeddingSchema())
     
     // --- [새로 추가: 초기 관리자 계정 생성을 위한 마이그레이션] ---
     app.migrations.add(CreateInitialAdminUser())
+    
+    // 수정을 위함
+    app.migrations.add(UpdateWeddingInfoSchema())  // 이 줄이 있어야 함
 
     // 라우트 등록
     try routes(app)

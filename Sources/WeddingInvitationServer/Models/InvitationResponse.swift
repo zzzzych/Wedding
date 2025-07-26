@@ -21,10 +21,24 @@ struct FilteredWeddingInfo: Content {
     let groomName: String
     let brideName: String
     let weddingDate: Date
-    let weddingLocation: String?    // 결혼식 초대 그룹만
+    
+    // === 웨딩홀 정보 (결혼식 초대 그룹만) ===
+    let venueName: String?              // 웨딩홀 이름
+    let venueAddress: String?           // 기본 주소
+    let venueDetail: String?            // 상세 위치
+    let venuePhone: String?             // 연락처
+    
+    // === 지도 및 길찾기 (결혼식 초대 그룹만) ===
+    let kakaoMapUrl: String?            // 카카오맵 링크
+    let naverMapUrl: String?            // 네이버지도 링크
+    let googleMapUrl: String?           // 구글맵 링크
+    let parkingInfo: String?            // 주차 안내
+    let transportInfo: String?          // 대중교통 안내
+    
+    // === 기존 필드들 ===
     let greetingMessage: String
-    let ceremonyProgram: String?    // 7일 전 + 결혼식 초대 그룹만
-    let accountInfo: [String]?      // 부모님 그룹만
+    let ceremonyProgram: String?        // 7일 전 + 결혼식 초대 그룹만
+    let accountInfo: [String]?          // 부모님 그룹만
     
     /// WeddingInfo를 그룹 타입에 따라 필터링해서 생성
     init(from weddingInfo: WeddingInfo, groupType: GroupType, daysToCeremony: Int) {
@@ -36,18 +50,46 @@ struct FilteredWeddingInfo: Content {
         // 그룹 타입별 정보 필터링
         switch groupType {
         case .weddingGuest:
-            self.weddingLocation = weddingInfo.weddingLocation
+            // 결혼식 초대 그룹: 모든 웨딩홀 및 지도 정보 표시
+            self.venueName = weddingInfo.venueName
+            self.venueAddress = weddingInfo.venueAddress
+            self.venueDetail = weddingInfo.venueDetail
+            self.venuePhone = weddingInfo.venuePhone
+            self.kakaoMapUrl = weddingInfo.kakaoMapUrl
+            self.naverMapUrl = weddingInfo.naverMapUrl
+            self.googleMapUrl = weddingInfo.googleMapUrl
+            self.parkingInfo = weddingInfo.parkingInfo
+            self.transportInfo = weddingInfo.transportInfo
+            
             // 7일 전 공개 로직
             self.ceremonyProgram = daysToCeremony <= 7 ? weddingInfo.ceremonyProgram : nil
             self.accountInfo = nil
             
         case .parentsGuest:
-            self.weddingLocation = nil
+            // 부모님 그룹: 웨딩홀/지도 정보 숨김, 계좌 정보만 표시
+            self.venueName = nil
+            self.venueAddress = nil
+            self.venueDetail = nil
+            self.venuePhone = nil
+            self.kakaoMapUrl = nil
+            self.naverMapUrl = nil
+            self.googleMapUrl = nil
+            self.parkingInfo = nil
+            self.transportInfo = nil
             self.ceremonyProgram = nil
             self.accountInfo = weddingInfo.accountInfo
             
         case .companyGuest:
-            self.weddingLocation = nil
+            // 회사 그룹: 모든 상세 정보 숨김
+            self.venueName = nil
+            self.venueAddress = nil
+            self.venueDetail = nil
+            self.venuePhone = nil
+            self.kakaoMapUrl = nil
+            self.naverMapUrl = nil
+            self.googleMapUrl = nil
+            self.parkingInfo = nil
+            self.transportInfo = nil
             self.ceremonyProgram = nil
             self.accountInfo = nil
         }
