@@ -5,25 +5,39 @@
 //  Created by zzzzych on 7/24/25.
 //
 
+
 import Fluent
 import Vapor
 
-/// 참석 응답 관련 API를 처리하는 컨트롤러
+/// 참석 응답 관련 API를 처리하는 컨트롤러 (개별 관리 기능 추가)
 struct RsvpController: RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let api = routes.grouped("api")
         
-        // POST /api/invitation/:uniqueCode/rsvp - 참석 여부 응답 제출 (인증 불필요)
+        // === 하객용 API (인증 불필요) ===
+        // POST /api/invitation/:uniqueCode/rsvp - 참석 여부 응답 제출
         api.post("invitation", ":uniqueCode", "rsvp", use: submitRsvp)
         
-        // 관리자 전용 라우트 (임시로 인증 미들웨어 제거)
+        // === 관리자용 API ===
         let admin = api.grouped("admin")
-        admin.get("rsvps", use: getAllRsvps)
+        
+        // 응답 조회 API들
+        admin.get("rsvps", use: getAllRsvps)                      // 전체 응답 현황 조회
+        admin.get("rsvps", ":rsvpId", use: getRsvp)               // 특정 응답 조회 ✨ 새로 추가
+        
+        // 응답 관리 API들
+        admin.put("rsvps", ":rsvpId", use: updateRsvp)            // 응답 수정 ✨ 새로 추가
+        admin.delete("rsvps", ":rsvpId", use: deleteRsvp)         // 응답 삭제 ✨ 새로 추가
+        
+        // 대량 작업 API들
+        admin.delete("rsvps", "bulk", use: bulkDeleteRsvps)       // 여러 응답 일괄 삭제 ✨ 새로 추가
+        admin.get("rsvps", "export", use: exportRsvps)            // 응답 데이터 CSV 내보내기 ✨ 새로 추가
     }
     
-    // MARK: - POST /api/invitation/:uniqueCode/rsvp
-    /// 참석 여부 응답 제출
+    // MARK: - 기존 기능들
+    
+    /// 참석 여부 응답 제출 (하객용)
     func submitRsvp(req: Request) async throws -> RsvpResponseData {
         // 1. URL에서 uniqueCode 파라미터 추출
         guard let uniqueCode = req.parameters.get("uniqueCode") else {
@@ -37,7 +51,7 @@ struct RsvpController: RouteCollection {
             throw Abort(.notFound, reason: "유효하지 않은 초대 코드입니다.")
         }
         
-        // 3. 그룹 타입이 WEDDING_GUEST인지 확인 (참석 응답은 결혼식 초대 그룹만 가능)
+        // 3. 그룹 타입이 WEDDING_GUEST인지 확인
         guard invitationGroup.groupType == GroupType.weddingGuest.rawValue else {
             throw Abort(.forbidden, reason: "이 그룹은 참석 여부를 응답할 수 없습니다.")
         }
@@ -79,17 +93,16 @@ struct RsvpController: RouteCollection {
             )
             
             try await newRsvp.save(on: req.db)
-            
             return RsvpResponseData.from(newRsvp)
         }
     }
     
-    // MARK: - GET /api/admin/rsvps
     /// 모든 참석 응답 현황 조회 (관리자용)
     func getAllRsvps(req: Request) async throws -> RsvpSummary {
         // 1. 모든 참석 응답 조회 (그룹 정보 포함)
         let allRsvps = try await RsvpResponse.query(on: req.db)
             .with(\.$group)  // 관련된 그룹 정보도 함께 로드
+            .sort(\.$createdAt, .descending) // 최신 응답순으로 정렬
             .all()
         
         // 2. 통계 계산
@@ -112,71 +125,133 @@ struct RsvpController: RouteCollection {
             responses: responseData
         )
     }
-}
-
-// MARK: - Request/Response Models
-
-/// 참석 여부 응답 요청 데이터
-struct RsvpRequest: Content {
-    let responderName: String    // 응답자 이름
-    let isAttending: Bool        // 참석 여부
-    let adultCount: Int          // 성인 인원수
-    let childrenCount: Int       // 자녀 인원수
-}
-
-/// 참석 여부 응답 반환 데이터
-struct RsvpResponseData: Content {
-    let id: UUID?
-    let responderName: String
-    let isAttending: Bool
-    let adultCount: Int
-    let childrenCount: Int
-    let submittedAt: Date?
     
-    static func from(_ rsvp: RsvpResponse) -> RsvpResponseData {
-        return RsvpResponseData(
-            id: rsvp.id,
-            responderName: rsvp.responderName,
-            isAttending: rsvp.isAttending,
-            adultCount: rsvp.adultCount,
-            childrenCount: rsvp.childrenCount,
-            submittedAt: rsvp.createdAt
+    // MARK: - ✨ 새로 추가된 개별 응답 관리 기능들
+    
+    /// 특정 응답 상세 조회 (관리자용)
+    func getRsvp(req: Request) async throws -> RsvpWithGroupInfo {
+        // 1. URL에서 rsvpId 파라미터 추출
+        guard let rsvpIdString = req.parameters.get("rsvpId"),
+              let rsvpId = UUID(uuidString: rsvpIdString) else {
+            throw Abort(.badRequest, reason: "유효하지 않은 응답 ID입니다.")
+        }
+        
+        // 2. 응답 조회 (그룹 정보 포함)
+        guard let rsvp = try await RsvpResponse.query(on: req.db)
+            .filter(\.$id == rsvpId)
+            .with(\.$group)
+            .first() else {
+            throw Abort(.notFound, reason: "응답을 찾을 수 없습니다.")
+        }
+        
+        return RsvpWithGroupInfo.from(rsvp)
+    }
+    
+    /// 응답 수정 (관리자용)
+    func updateRsvp(req: Request) async throws -> RsvpResponseData {
+        // 1. URL에서 rsvpId 파라미터 추출
+        guard let rsvpIdString = req.parameters.get("rsvpId"),
+              let rsvpId = UUID(uuidString: rsvpIdString) else {
+            throw Abort(.badRequest, reason: "유효하지 않은 응답 ID입니다.")
+        }
+        
+        // 2. 응답 조회
+        guard let rsvp = try await RsvpResponse.find(rsvpId, on: req.db) else {
+            throw Abort(.notFound, reason: "응답을 찾을 수 없습니다.")
+        }
+        
+        // 3. 요청 데이터 파싱
+        let updateRequest = try req.content.decode(UpdateRsvpRequest.self)
+        
+        // 4. 데이터 유효성 검사
+        guard !updateRequest.responderName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            throw Abort(.badRequest, reason: "응답자 이름이 필요합니다.")
+        }
+        
+        guard updateRequest.adultCount >= 0 && updateRequest.childrenCount >= 0 else {
+            throw Abort(.badRequest, reason: "인원수는 0 이상이어야 합니다.")
+        }
+        
+        // 5. 동일한 그룹 내에서 이름 중복 검사 (자신 제외)
+        let existingResponse = try await RsvpResponse.query(on: req.db)
+            .filter(\.$group.$id == rsvp.$group.id)
+            .filter(\.$responderName == updateRequest.responderName.trimmingCharacters(in: .whitespacesAndNewlines))
+            .filter(\.$id != rsvpId)
+            .first()
+        
+        if existingResponse != nil {
+            throw Abort(.conflict, reason: "같은 그룹에 이미 동일한 이름의 응답자가 있습니다.")
+        }
+        
+        // 6. 응답 정보 업데이트
+        rsvp.responderName = updateRequest.responderName.trimmingCharacters(in: .whitespacesAndNewlines)
+        rsvp.isAttending = updateRequest.isAttending
+        rsvp.adultCount = updateRequest.adultCount
+        rsvp.childrenCount = updateRequest.childrenCount
+        
+        // 7. 데이터베이스에 저장
+        try await rsvp.save(on: req.db)
+        
+        return RsvpResponseData.from(rsvp)
+    }
+    
+    /// 응답 삭제 (관리자용)
+    func deleteRsvp(req: Request) async throws -> HTTPStatus {
+        // 1. URL에서 rsvpId 파라미터 추출
+        guard let rsvpIdString = req.parameters.get("rsvpId"),
+              let rsvpId = UUID(uuidString: rsvpIdString) else {
+            throw Abort(.badRequest, reason: "유효하지 않은 응답 ID입니다.")
+        }
+        
+        // 2. 응답 조회
+        guard let rsvp = try await RsvpResponse.find(rsvpId, on: req.db) else {
+            throw Abort(.notFound, reason: "응답을 찾을 수 없습니다.")
+        }
+        
+        // 3. 응답 삭제
+        try await rsvp.delete(on: req.db)
+        
+        return .noContent // 204 No Content
+    }
+    
+    /// 여러 응답 일괄 삭제 (관리자용)
+    func bulkDeleteRsvps(req: Request) async throws -> BulkDeleteResult {
+        // 1. 요청 데이터 파싱
+        let deleteRequest = try req.content.decode(BulkDeleteRequest.self)
+        
+        // 2. 유효한 UUID인지 검사
+        let validIds = deleteRequest.rsvpIds.compactMap { UUID(uuidString: $0) }
+        
+        if validIds.isEmpty {
+            throw Abort(.badRequest, reason: "유효한 응답 ID가 없습니다.")
+        }
+        
+        // 3. 해당 ID들의 응답 조회
+        let rsvpsToDelete = try await RsvpResponse.query(on: req.db)
+            .filter(\.$id ~~ validIds) // IN 조건
+            .all()
+        
+        let foundCount = rsvpsToDelete.count
+        
+        // 4. 일괄 삭제 실행
+        try await RsvpResponse.query(on: req.db)
+            .filter(\.$id ~~ validIds)
+            .delete()
+        
+        return BulkDeleteResult(
+            requestedCount: deleteRequest.rsvpIds.count,
+            deletedCount: foundCount,
+            notFoundCount: deleteRequest.rsvpIds.count - foundCount
         )
     }
-}
-
-/// 그룹 정보가 포함된 참석 응답 데이터
-struct RsvpWithGroupInfo: Content {
-    let id: UUID?
-    let responderName: String
-    let isAttending: Bool
-    let adultCount: Int
-    let childrenCount: Int
-    let submittedAt: Date?
-    let groupName: String
-    let groupType: String
     
-    static func from(_ rsvp: RsvpResponse) -> RsvpWithGroupInfo {
-        return RsvpWithGroupInfo(
-            id: rsvp.id,
-            responderName: rsvp.responderName,
-            isAttending: rsvp.isAttending,
-            adultCount: rsvp.adultCount,
-            childrenCount: rsvp.childrenCount,
-            submittedAt: rsvp.createdAt,
-            groupName: rsvp.group.groupName,
-            groupType: rsvp.group.groupType
-        )
-    }
-}
-
-/// 참석 응답 요약 정보
-struct RsvpSummary: Content {
-    let totalResponses: Int      // 총 응답 수
-    let attendingCount: Int      // 참석 응답 수
-    let notAttendingCount: Int   // 불참 응답 수
-    let totalAdults: Int         // 총 성인 인원
-    let totalChildren: Int       // 총 자녀 인원
-    let totalPeople: Int         // 총 인원수
-    let responses: [RsvpWithGroupInfo]  // 개별 응답 목록
-}
+    /// 응답 데이터 CSV 내보내기 (관리자용)
+    func exportRsvps(req: Request) async throws -> Response {
+        // 1. 모든 응답 조회 (그룹 정보 포함)
+        let allRsvps = try await RsvpResponse.query(on: req.db)
+            .with(\.$group)
+            .sort(\.$createdAt)
+            .all()
+        
+        // 2. CSV 헤더 생성
+        var csvContent = "응답자명,참석여부,성인인원,자녀인원,총인원,그룹명,그
