@@ -38,15 +38,14 @@ struct InvitationController: RouteCollection {
     /// 하객이 고유 링크를 통해 접속했을 때 그룹에 맞는 청첩장 정보를 제공합니다
     /// - Parameter req: HTTP 요청 객체 (uniqueCode 파라미터 포함)
     /// - Returns: 그룹별로 필터링된 청첩장 응답 데이터
-    func getInvitation(req: Request) async throws -> InvitationResponse {
+    // ✅ 수정된 코드
+    func getInvitation(req: Request) async throws -> InvitationAPIResponse {
         // 1. URL에서 uniqueCode 파라미터 추출
-        // 예: /api/invitation/ABC123DEF 에서 ABC123DEF 부분
         guard let uniqueCode = req.parameters.get("uniqueCode") else {
             throw Abort(.badRequest, reason: "고유 코드가 필요합니다.")
         }
         
         // 2. uniqueCode로 초대 그룹 찾기
-        // 데이터베이스에서 해당 고유 코드를 가진 그룹을 검색합니다
         guard let invitationGroup = try await InvitationGroup.query(on: req.db)
             .filter(\.$uniqueCode == uniqueCode)
             .first() else {
@@ -59,11 +58,35 @@ struct InvitationController: RouteCollection {
             throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
         }
         
-        // 4. 그룹별로 필터링된 응답 생성
-        // 각 그룹 타입에 따라 보여줄 정보를 다르게 필터링합니다
-        let response = InvitationResponse.create(from: weddingInfo, and: invitationGroup)
-        return response
+        // 4. 그룹 타입별 기능 설정
+        let groupType = GroupType(rawValue: invitationGroup.groupType) ?? .companyGuest
+        let features = InvitationFeatures(
+            showRsvpForm: groupType == .weddingGuest,
+            showAccountInfo: groupType == .parentsGuest,
+            showShareButton: true,
+            showVenueInfo: groupType == .weddingGuest,
+            showPhotoGallery: true,
+            showCeremonyProgram: groupType == .weddingGuest
+        )
+        
+        // 5. 통합된 장소 정보 생성
+        let weddingLocation = "\(weddingInfo.venueName) \(weddingInfo.venueAddress)"
+        
+        // 6. 단순한 응답 형식으로 반환
+        return InvitationAPIResponse(
+            groupName: invitationGroup.groupName,
+            groupType: invitationGroup.groupType,
+            groomName: weddingInfo.groomName,
+            brideName: weddingInfo.brideName,
+            weddingDate: ISO8601DateFormatter().string(from: weddingInfo.weddingDate),
+            weddingLocation: weddingLocation,
+            greetingMessage: invitationGroup.greetingMessage,
+            ceremonyProgram: weddingInfo.ceremonyProgram,
+            accountInfo: weddingInfo.accountInfo,
+            features: features
+        )
     }
+    
     
     // MARK: - 관리자용 그룹 관리 API 기능들
     
@@ -195,10 +218,7 @@ struct InvitationController: RouteCollection {
         )
     }
     
-    /// 그룹 정보 수정 (관리자용)
-    /// 관리자가 기존 그룹의 이름이나 타입을 변경할 수 있습니다
-    /// - Parameter req: HTTP 요청 객체 (groupId 파라미터와 수정 데이터 포함)
-    /// - Returns: 수정된 그룹 정보
+    /// 그룹 정보 수정 (관리자용) - 부분 업데이트 지원
     func updateGroup(req: Request) async throws -> InvitationGroup {
         // 1. URL에서 groupId 파라미터 추출
         guard let groupIdString = req.parameters.get("groupId"),
@@ -211,30 +231,29 @@ struct InvitationController: RouteCollection {
             throw Abort(.notFound, reason: "그룹을 찾을 수 없습니다.")
         }
         
-        // 3. 요청 데이터 파싱
+        // 3. 요청 데이터 파싱 (부분 업데이트용)
         let updateRequest = try req.content.decode(UpdateGroupRequest.self)
         
-        // 4. 그룹 타입 유효성 검사
-        guard GroupType(rawValue: updateRequest.groupType) != nil else {
-            throw Abort(.badRequest, reason: "유효하지 않은 그룹 타입입니다.")
+        // 4. 필드별 업데이트 (nil이 아닌 필드만)
+        if let groupName = updateRequest.groupName, !groupName.isEmpty {
+            // 그룹 이름 중복 검사 (자신 제외)
+            let existingGroup = try await InvitationGroup.query(on: req.db)
+                .filter(\.$groupName == groupName)
+                .filter(\.$id != groupId) // 자신은 제외
+                .first()
+            
+            if existingGroup != nil {
+                throw Abort(.conflict, reason: "이미 존재하는 그룹 이름입니다.")
+            }
+            
+            group.groupName = groupName
         }
         
-        // 5. 그룹 이름 중복 검사 (자신 제외)
-        // 다른 그룹이 같은 이름을 사용하고 있는지 확인합니다
-        let existingGroup = try await InvitationGroup.query(on: req.db)
-            .filter(\.$groupName == updateRequest.groupName)
-            .filter(\.$id != groupId) // 자신은 제외
-            .first()
-        
-        if existingGroup != nil {
-            throw Abort(.conflict, reason: "이미 존재하는 그룹 이름입니다.")
+        if let greetingMessage = updateRequest.greetingMessage {
+            group.greetingMessage = greetingMessage
         }
         
-        // 6. 그룹 정보 업데이트
-        group.groupName = updateRequest.groupName
-        group.groupType = updateRequest.groupType
-        
-        // 7. 데이터베이스에 저장
+        // 5. 데이터베이스에 저장
         try await group.save(on: req.db)
         
         return group

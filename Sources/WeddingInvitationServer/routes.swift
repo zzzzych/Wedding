@@ -28,7 +28,7 @@ struct InvitationFeatures: Content {
 // 라우트 설정 함수
 func routes(_ app: Application) throws {
     
-    // ✅ 추가: 서버 시작 시 테스트 데이터 자동 생성
+    // ✅ 수정된 setup-test-data 라우트
     app.get("setup-test-data") { req async throws -> String in
         // wedding123 그룹이 이미 존재하는지 확인
         let existingGroup = try await InvitationGroup.query(on: req.db)
@@ -36,11 +36,12 @@ func routes(_ app: Application) throws {
             .first()
         
         if existingGroup == nil {
-            // 없으면 새로 생성
+            // 없으면 새로 생성 (greetingMessage 추가)
             let testGroup = InvitationGroup()
             testGroup.groupName = "결혼식 초대 그룹"
             testGroup.groupType = GroupType.weddingGuest.rawValue
             testGroup.uniqueCode = "wedding123"
+            testGroup.greetingMessage = "저희의 소중한 날에 함께해주셔서 감사합니다."  // ✅ 추가
             
             try await testGroup.save(on: req.db)
             return "✅ wedding123 그룹이 데이터베이스에 생성되었습니다!"
@@ -49,7 +50,6 @@ func routes(_ app: Application) throws {
         }
     }
     
-    // 기존 코드들...
     
     // 기본 루트 - 서버 상태 확인용
     app.get { req async in
@@ -62,9 +62,36 @@ func routes(_ app: Application) throws {
     try app.register(collection: AdminController())
     // InvitationController 등록 - 누락된 부분 추가
     try app.register(collection: InvitationController())
+    // routes.swift 파일의 맨 아래에 다음 줄을 추가하세요
+    try app.register(collection: WeddingController())
     
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
+    
+    // WeddingInfo 기본 데이터 생성 라우트 추가
+    app.get("create-wedding-data") { req async throws -> String in
+        // 기존 결혼식 정보가 있는지 확인
+        let existingWedding = try await WeddingInfo.query(on: req.db).first()
+        
+        if existingWedding == nil {
+            // 기본 결혼식 정보 생성
+            let weddingInfo = WeddingInfo()
+            weddingInfo.groomName = "이지환"
+            weddingInfo.brideName = "이윤진"
+            weddingInfo.weddingDate = Date()
+            weddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+            weddingInfo.venueAddress = "서울 용산구 한강대로 366 포포인츠바이쉐라톤조선 서울역"
+            weddingInfo.venueDetail = "포포인츠 바이 쉐라톤 조선 서울역 19층"
+            weddingInfo.greetingMessage = "저희 두 사람의 새로운 시작을 축복해주세요."
+            weddingInfo.ceremonyProgram = "오후 6시 예식"
+            weddingInfo.accountInfo = ["농협 121065-56- 105215 (고인옥 / 신랑母)"]
+            
+            try await weddingInfo.save(on: req.db)
+            return "✅ 기본 결혼식 정보가 생성되었습니다!"
+        } else {
+            return "✅ 결혼식 정보가 이미 존재합니다!"
+        }
+    }
     
     // 4. 모든 그룹 조회 API (관리자용)
     // GET /api/groups

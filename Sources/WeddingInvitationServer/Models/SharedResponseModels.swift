@@ -183,12 +183,11 @@ struct CreateGroupRequest: Content {
     let greetingMessage: String
 }
 
-/// 그룹 수정 요청 데이터
+
+/// 그룹 수정 요청 데이터 (부분 업데이트용)
 struct UpdateGroupRequest: Content {
-    /// 새로운 그룹 이름
-    let groupName: String
-    /// 새로운 그룹 타입
-    let groupType: String
+    /// 새로운 그룹 이름 (옵셔널)
+    let groupName: String?
     /// 그룹별 인사말 (옵셔널)
     let greetingMessage: String?
 }
