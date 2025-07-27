@@ -60,6 +60,8 @@ func routes(_ app: Application) throws {
     try app.register(collection: RsvpController())
     // AdminController 등록
     try app.register(collection: AdminController())
+    // InvitationController 등록 - 누락된 부분 추가
+    try app.register(collection: InvitationController())
     
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
