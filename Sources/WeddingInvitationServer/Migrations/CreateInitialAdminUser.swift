@@ -13,7 +13,7 @@ struct CreateInitialAdminUser: Migration {
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
         // 환경변수에서 관리자 정보 읽기 (기본값 제공)
         let adminUsername = Environment.get("ADMIN_USERNAME") ?? "admin"
-        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "wedding2025!"
+        let adminPassword = Environment.get("ADMIN_PASSWORD") ?? "admin"
         
         do {
             // 관리자 계정 생성

@@ -99,34 +99,6 @@ func routes(_ app: Application) throws {
         )
     }
     
-    
-    // 3. 관리자 로그인 API
-    // POST /api/admin/login
-    api.post("admin", "login") { req async throws -> Response in
-        // 요청 본문을 문자열로 읽어서 간단히 확인
-        let bodyString = req.body.string ?? ""
-        
-        // 간단한 인증 확인 (username과 password 포함 여부)
-        if bodyString.contains("admin") && bodyString.contains("test123") {
-            let jsonString = """
-            {
-                "success": true,
-                "token": "temporary-jwt-token",
-                "message": "로그인에 성공했습니다."
-            }
-            """
-            
-            let response = Response(
-                status: .ok,
-                headers: HTTPHeaders([("Content-Type", "application/json")]),
-                body: .init(string: jsonString)
-            )
-            return response
-        } else {
-            throw Abort(.unauthorized, reason: "잘못된 사용자명 또는 비밀번호입니다.")
-        }
-    }
-    
     // 4. 모든 그룹 조회 API (관리자용)
     // GET /api/groups
     api.get("groups") { req async throws -> Response in
