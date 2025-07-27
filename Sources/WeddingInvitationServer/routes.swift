@@ -58,7 +58,8 @@ func routes(_ app: Application) throws {
     
     // ✅ RsvpController 등록 아래에 추가
     try app.register(collection: RsvpController())
-    try app.register(collection: AdminController()) // ✅ 추가
+    // AdminController 등록
+    try app.register(collection: AdminController())
     
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
