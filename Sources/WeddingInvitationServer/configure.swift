@@ -1,33 +1,28 @@
-import Fluent
-import FluentSQLiteDriver
-import Vapor
-import JWTKit
+// Sources/WeddingInvitationServer/configure.swift
+@preconcurrency import Fluent
+@preconcurrency import FluentSQLiteDriver
+@preconcurrency import Vapor
 
-public func configure(_ app: Application) async throws {
-    // CORS 설정
-    let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .all,
-        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .PATCH],
-        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith]
-    )
-    app.middleware.use(CORSMiddleware(configuration: corsConfiguration))
-    
-    // 정적 파일 서빙
-    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
-
+// configure 함수 - 애플리케이션 설정
+public func configure(_ app: Application) throws {
     // 데이터베이스 설정
     app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
-
-    // === 마이그레이션 등록 (순서 중요!) ===
-    // 1. 기본 스키마 생성 또는 업데이트된 스키마 생성
-    app.migrations.add(CreateWeddingSchema())
     
-    // 2. 초기 관리자 계정 생성
-    app.migrations.add(CreateInitialAdminUser())
+    // CORS 설정 추가 - React 앱에서 API 호출 허용
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .originBased,          // Origin 기반 허용
+        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS], // 허용할 HTTP 메서드
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith] // 허용할 헤더
+    )
+    let cors = CORSMiddleware(configuration: corsConfiguration)
+    app.middleware.use(cors, at: .beginning) // CORS 미들웨어를 가장 먼저 적용
     
-    // 3. 스키마 업데이트 (이미 CreateWeddingSchema에 포함되어 있으므로 제거)
-    // app.migrations.add(UpdateWeddingInfoSchema())  // <- 이 줄 주석 처리 또는 삭제
-
-    // 라우트 등록
+    // 마이그레이션 설정 (기존에 있다면 그대로 유지)
+    // app.migrations.add(CreateWeddingInfo())
+    // app.migrations.add(CreateInvitationGroup())
+    // app.migrations.add(CreateRsvpResponse())
+    // app.migrations.add(CreateAdminUser())
+    
+    // 라우터 등록
     try routes(app)
 }
