@@ -129,6 +129,8 @@ struct GroupWithStats: Content {
     let groupType: String
     /// 고유 접근 코드
     let uniqueCode: String
+    /// 그룹별 인사말
+    let greetingMessage: String
     /// 총 응답 수 (해당 그룹에서 응답한 사람 수)
     let totalResponses: Int
     /// 참석 응답 수 (해당 그룹에서 참석한다고 응답한 사람 수)
@@ -177,13 +179,16 @@ struct CreateGroupRequest: Content {
     let groupName: String
     /// 그룹 타입 (예: "WEDDING_GUEST")
     let groupType: String
+    /// 그룹별 인사말
+    let greetingMessage: String
 }
 
 /// 그룹 수정 요청 데이터
-/// 관리자가 기존 그룹의 정보를 수정할 때 사용하는 요청 구조체입니다
 struct UpdateGroupRequest: Content {
     /// 새로운 그룹 이름
     let groupName: String
     /// 새로운 그룹 타입
     let groupType: String
+    /// 그룹별 인사말 (옵셔널)
+    let greetingMessage: String?
 }

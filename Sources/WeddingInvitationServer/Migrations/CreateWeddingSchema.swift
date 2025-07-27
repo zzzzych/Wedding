@@ -39,12 +39,14 @@ struct CreateWeddingSchema: Migration {
             .field("account_info", .array(of: .string), .required)
             .create()
             .flatMap {
-                // InvitationGroup 테이블 생성
+                // InvitationGroup 테이블 생성 부분을 찾아서
                 database.schema(InvitationGroup.schema)
                     .id()
                     .field("group_name", .string, .required)
                     .field("group_type", .string, .required)
                     .field("unique_code", .string, .required)
+                    // ✅ 이 줄을 추가하세요
+                    .field("greeting_message", .string, .required)
                     .unique(on: "unique_code")
                     .create()
             }.flatMap {

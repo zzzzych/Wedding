@@ -38,18 +38,31 @@ final class InvitationGroup: Model, Content, @unchecked Sendable {
     // 하객들은 이 코드가 포함된 링크를 통해 청첩장에 접속하게 됩니다.
     @Field(key: "unique_code")
     var uniqueCode: String
+    
+    // ✅ 새로 추가할 필드
+    @Field(key: "greeting_message")
+    var greetingMessage: String
 
     // 4. 기본 생성자: Fluent가 데이터베이스에서 데이터를 읽어올 때 사용합니다.
     init() { }
     
-    // uniqueCode를 자동 생성하도록 변경
+    // 기존 생성자 수정
     init(id: UUID? = nil, groupName: String, groupType: String) {
-        // self.id는 '이 객체의 id 필드'를, 오른쪽의 id는 생성자를 통해 전달받은 '매개변수 id'를 의미합니다.
-        // 즉, "이 객체의 id 필드에, 전달받은 id 값을 넣어줘" 라는 뜻입니다.
         self.id = id
         self.groupName = groupName
         self.groupType = groupType
         self.uniqueCode = Self.generateSecureCode()
+        // ✅ 기본 인사말 추가
+        self.greetingMessage = ""
+    }
+
+    // ✅ greetingMessage를 받는 새 생성자 추가
+    init(groupName: String, groupType: String, greetingMessage: String) {
+        self.id = nil
+        self.groupName = groupName
+        self.groupType = groupType
+        self.uniqueCode = Self.generateSecureCode()
+        self.greetingMessage = greetingMessage
     }
     
     // 5. 사용자 정의 생성자: 우리가 코드로 새로운 그룹을 만들 때 사용합니다.

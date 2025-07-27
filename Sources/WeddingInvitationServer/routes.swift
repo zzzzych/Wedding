@@ -66,41 +66,6 @@ func routes(_ app: Application) throws {
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
     
-    // 1. 초대장 정보 조회 API (실제 DB 쿼리로 변경)
-    // GET /api/invitation/:uniqueCode
-    api.get("invitation", ":uniqueCode") { req async throws -> InvitationAPIResponse in
-        // 🔍 URL에서 고유 코드 추출
-        guard let uniqueCode = req.parameters.get("uniqueCode") else {
-            throw Abort(.badRequest, reason: "유효하지 않은 초대 코드입니다.")
-        }
-        
-        // 📋 데이터베이스에서 결혼식 기본 정보 조회
-        guard let weddingInfo = try await WeddingInfo.query(on: req.db).first() else {
-            throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
-        }
-        
-        // 📦 API 응답 데이터 구성
-        return InvitationAPIResponse(
-            groupName: "결혼식 초대 그룹",
-            groupType: "WEDDING_GUEST",
-            groomName: weddingInfo.groomName,
-            brideName: weddingInfo.brideName,
-            weddingDate: ISO8601DateFormatter().string(from: weddingInfo.weddingDate),
-            weddingLocation: weddingInfo.venueName + " " + weddingInfo.venueAddress,
-            greetingMessage: weddingInfo.greetingMessage,
-            ceremonyProgram: weddingInfo.ceremonyProgram,
-            accountInfo: weddingInfo.accountInfo,
-            features: InvitationFeatures(
-                showRsvpForm: true,
-                showAccountInfo: false,
-                showShareButton: false,
-                showVenueInfo: true,
-                showPhotoGallery: true,
-                showCeremonyProgram: true
-            )
-        )
-    }
-    
     // 4. 모든 그룹 조회 API (관리자용)
     // GET /api/groups
     api.get("groups") { req async throws -> Response in
@@ -136,20 +101,5 @@ func routes(_ app: Application) throws {
             body: .init(string: jsonString)
         )
         return response
-    }
-    
-    // 새 그룹 생성 (관리자용)
-    app.post("api", "admin", "groups") { req -> String in
-        // 요청 본문에서 그룹 데이터 파싱 (실제로는 JSON 파싱 필요)
-        return """
-        {
-            "id": "new_group_\(Int.random(in: 1000...9999))",
-            "groupName": "새로운 그룹",
-            "groupType": "CUSTOM_GUEST",
-            "uniqueCode": "custom\(Int.random(in: 100...999))",
-            "createdAt": "\(Date().ISO8601Format())",
-            "description": "관리자가 생성한 새 그룹"
-        }
-        """
     }
 }

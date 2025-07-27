@@ -93,9 +93,11 @@ struct InvitationController: RouteCollection {
         
         // 4. 새 초대 그룹 생성
         // uniqueCode는 InvitationGroup의 생성자에서 자동으로 생성됩니다
+        // ✅ 수정된 코드 (greetingMessage 추가)
         let newGroup = InvitationGroup(
             groupName: createRequest.groupName,
-            groupType: createRequest.groupType
+            groupType: createRequest.groupType,
+            greetingMessage: createRequest.greetingMessage
         )
         
         // 5. 데이터베이스에 저장
@@ -129,11 +131,13 @@ struct InvitationController: RouteCollection {
                 .count()
             
             // 통계 정보가 포함된 그룹 데이터 생성
+            // ✅ 수정된 코드 (greetingMessage 추가)
             let groupWithStats = GroupWithStats(
                 id: group.id!,
                 groupName: group.groupName,
                 groupType: group.groupType,
                 uniqueCode: group.uniqueCode,
+                greetingMessage: group.greetingMessage,
                 totalResponses: responseCount,
                 attendingResponses: attendingCount
             )
