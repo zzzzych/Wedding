@@ -28,10 +28,37 @@ struct InvitationFeatures: Content {
 // 라우트 설정 함수
 func routes(_ app: Application) throws {
     
+    // ✅ 추가: 서버 시작 시 테스트 데이터 자동 생성
+    app.get("setup-test-data") { req async throws -> String in
+        // wedding123 그룹이 이미 존재하는지 확인
+        let existingGroup = try await InvitationGroup.query(on: req.db)
+            .filter(\.$uniqueCode == "wedding123")
+            .first()
+        
+        if existingGroup == nil {
+            // 없으면 새로 생성
+            let testGroup = InvitationGroup()
+            testGroup.groupName = "결혼식 초대 그룹"
+            testGroup.groupType = GroupType.weddingGuest.rawValue
+            testGroup.uniqueCode = "wedding123"
+            
+            try await testGroup.save(on: req.db)
+            return "✅ wedding123 그룹이 데이터베이스에 생성되었습니다!"
+        } else {
+            return "✅ wedding123 그룹이 이미 존재합니다!"
+        }
+    }
+    
+    // 기존 코드들...
+    
     // 기본 루트 - 서버 상태 확인용
     app.get { req async in
         return "Wedding Invitation Server is running! 💍"
     }
+    
+    // ✅ RsvpController 등록 아래에 추가
+    try app.register(collection: RsvpController())
+    try app.register(collection: AdminController()) // ✅ 추가
     
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
@@ -71,27 +98,6 @@ func routes(_ app: Application) throws {
         )
     }
     
-    // 2. 참석 응답 제출 API
-    // POST /api/invitation/:uniqueCode/rsvp
-    api.post("invitation", ":uniqueCode", "rsvp") { req async throws -> Response in
-        guard let uniqueCode = req.parameters.get("uniqueCode") else {
-            throw Abort(.badRequest, reason: "유효하지 않은 초대 코드입니다.")
-        }
-        
-        let jsonString = """
-        {
-            "success": true,
-            "message": "참석 응답이 성공적으로 등록되었습니다."
-        }
-        """
-        
-        let response = Response(
-            status: .ok,
-            headers: HTTPHeaders([("Content-Type", "application/json")]),
-            body: .init(string: jsonString)
-        )
-        return response
-    }
     
     // 3. 관리자 로그인 API
     // POST /api/admin/login
@@ -169,32 +175,6 @@ func routes(_ app: Application) throws {
             "createdAt": "\(Date().ISO8601Format())",
             "description": "관리자가 생성한 새 그룹"
         }
-        """
-    }
-
-    // 모든 참석 응답 조회 (관리자용)
-    app.get("api", "admin", "rsvps") { req -> String in
-        return """
-        [
-            {
-                "id": "rsvp001",
-                "groupCode": "wedding123",
-                "guestName": "김하객",
-                "attendanceCount": 2,
-                "message": "축하드립니다!",
-                "contactInfo": "guest1@example.com",
-                "submittedAt": "2025-01-15T10:30:00Z"
-            },
-            {
-                "id": "rsvp002", 
-                "groupCode": "parent456",
-                "guestName": "박친척",
-                "attendanceCount": 4,
-                "message": "건강하게 잘 살아요",
-                "contactInfo": "relative@example.com",
-                "submittedAt": "2025-01-16T14:20:00Z"
-            }
-        ]
         """
     }
 }
