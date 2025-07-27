@@ -2,6 +2,29 @@
 @preconcurrency import Fluent
 @preconcurrency import Vapor
 
+// 🏗️ API 응답을 위한 구조체들 (이름 변경)
+struct InvitationAPIResponse: Content {
+    let groupName: String
+    let groupType: String
+    let groomName: String
+    let brideName: String
+    let weddingDate: String
+    let weddingLocation: String
+    let greetingMessage: String
+    let ceremonyProgram: String
+    let accountInfo: [String]
+    let features: InvitationFeatures
+}
+
+struct InvitationFeatures: Content {
+    let showRsvpForm: Bool
+    let showAccountInfo: Bool
+    let showShareButton: Bool
+    let showVenueInfo: Bool
+    let showPhotoGallery: Bool
+    let showCeremonyProgram: Bool
+}
+
 // 라우트 설정 함수
 func routes(_ app: Application) throws {
     
@@ -13,42 +36,39 @@ func routes(_ app: Application) throws {
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
     
-    // 1. 초대장 정보 조회 API
+    // 1. 초대장 정보 조회 API (실제 DB 쿼리로 변경)
     // GET /api/invitation/:uniqueCode
-    api.get("invitation", ":uniqueCode") { req async throws -> Response in
+    api.get("invitation", ":uniqueCode") { req async throws -> InvitationAPIResponse in
+        // 🔍 URL에서 고유 코드 추출
         guard let uniqueCode = req.parameters.get("uniqueCode") else {
             throw Abort(.badRequest, reason: "유효하지 않은 초대 코드입니다.")
         }
         
-        // JSON 문자열로 직접 응답 생성
-        let jsonString = """
-        {
-            "groupName": "결혼식 초대 그룹",
-            "groupType": "WEDDING_GUEST",
-            "groomName": "김신랑",
-            "brideName": "이신부",
-            "weddingDate": "2025-10-25T17:00:00Z",
-            "weddingLocation": "서울 강남구 웨딩홀",
-            "greetingMessage": "저희 두 사람, 새로운 시작을 함께 축복해주세요.",
-            "ceremonyProgram": "1부: 예식, 2부: 피로연",
-            "accountInfo": ["신한은행 110-xxx-xxxxxx (신랑)", "카카오뱅크 3333-xx-xxxxxxx (신부)"],
-            "features": {
-                "showRsvpForm": true,
-                "showAccountInfo": false,
-                "showShareButton": false,
-                "showVenueInfo": true,
-                "showPhotoGallery": true,
-                "showCeremonyProgram": true
-            }
+        // 📋 데이터베이스에서 결혼식 기본 정보 조회
+        guard let weddingInfo = try await WeddingInfo.query(on: req.db).first() else {
+            throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
         }
-        """
         
-        let response = Response(
-            status: .ok,
-            headers: HTTPHeaders([("Content-Type", "application/json")]),
-            body: .init(string: jsonString)
+        // 📦 API 응답 데이터 구성
+        return InvitationAPIResponse(
+            groupName: "결혼식 초대 그룹",
+            groupType: "WEDDING_GUEST",
+            groomName: weddingInfo.groomName,
+            brideName: weddingInfo.brideName,
+            weddingDate: ISO8601DateFormatter().string(from: weddingInfo.weddingDate),
+            weddingLocation: weddingInfo.venueName + " " + weddingInfo.venueAddress,
+            greetingMessage: weddingInfo.greetingMessage,
+            ceremonyProgram: weddingInfo.ceremonyProgram,
+            accountInfo: weddingInfo.accountInfo,
+            features: InvitationFeatures(
+                showRsvpForm: true,
+                showAccountInfo: false,
+                showShareButton: false,
+                showVenueInfo: true,
+                showPhotoGallery: true,
+                showCeremonyProgram: true
+            )
         )
-        return response
     }
     
     // 2. 참석 응답 제출 API
