@@ -136,4 +136,45 @@ func routes(_ app: Application) throws {
         )
         return response
     }
+    
+    // 새 그룹 생성 (관리자용)
+    app.post("api", "admin", "groups") { req -> String in
+        // 요청 본문에서 그룹 데이터 파싱 (실제로는 JSON 파싱 필요)
+        return """
+        {
+            "id": "new_group_\(Int.random(in: 1000...9999))",
+            "groupName": "새로운 그룹",
+            "groupType": "CUSTOM_GUEST",
+            "uniqueCode": "custom\(Int.random(in: 100...999))",
+            "createdAt": "\(Date().ISO8601Format())",
+            "description": "관리자가 생성한 새 그룹"
+        }
+        """
+    }
+
+    // 모든 참석 응답 조회 (관리자용)
+    app.get("api", "admin", "rsvps") { req -> String in
+        return """
+        [
+            {
+                "id": "rsvp001",
+                "groupCode": "wedding123",
+                "guestName": "김하객",
+                "attendanceCount": 2,
+                "message": "축하드립니다!",
+                "contactInfo": "guest1@example.com",
+                "submittedAt": "2025-01-15T10:30:00Z"
+            },
+            {
+                "id": "rsvp002", 
+                "groupCode": "parent456",
+                "guestName": "박친척",
+                "attendanceCount": 4,
+                "message": "건강하게 잘 살아요",
+                "contactInfo": "relative@example.com",
+                "submittedAt": "2025-01-16T14:20:00Z"
+            }
+        ]
+        """
+    }
 }
