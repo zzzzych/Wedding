@@ -59,14 +59,15 @@ struct InvitationController: RouteCollection {
         }
         
         // 4. 그룹 타입별 기능 설정
-        let groupType = GroupType(rawValue: invitationGroup.groupType) ?? .companyGuest
+        // ✅ 수정 후: 데이터베이스에서 실제 설정 값 사용
+        // ✅ 매개변수 순서를 구조체 정의에 맞춰 수정
         let features = InvitationFeatures(
-            showRsvpForm: groupType == .weddingGuest,
-            showAccountInfo: groupType == .parentsGuest,
-            showShareButton: true,
-            showVenueInfo: groupType == .weddingGuest,
-            showPhotoGallery: true,
-            showCeremonyProgram: groupType == .weddingGuest
+            showRsvpForm: invitationGroup.showRsvpForm ?? false,        // 1번째
+            showAccountInfo: invitationGroup.showAccountInfo ?? false,  // 2번째
+            showShareButton: invitationGroup.showShareButton ?? false,  // 3번째
+            showVenueInfo: invitationGroup.showVenueInfo ?? false,      // 4번째
+            showPhotoGallery: invitationGroup.showPhotoGallery ?? true, // 5번째
+            showCeremonyProgram: invitationGroup.showCeremonyProgram ?? false // 6번째
         )
         
         // 5. 통합된 장소 정보 생성

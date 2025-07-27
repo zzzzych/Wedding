@@ -27,6 +27,8 @@ public func configure(_ app: Application) async throws {
     // configure.swift 파일에서 마이그레이션 부분
     app.migrations.add(CreateWeddingSchema())        // ✅ 메인 테이블들
     app.migrations.add(CreateInitialAdminUser())     // ✅ 관리자 계정 생성
+//    app.migrations.add(AddFeatureSettingsToInvitationGroup())
+
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()

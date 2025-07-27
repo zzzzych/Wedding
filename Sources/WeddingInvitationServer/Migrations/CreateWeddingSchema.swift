@@ -45,8 +45,15 @@ struct CreateWeddingSchema: Migration {
                     .field("group_name", .string, .required)
                     .field("group_type", .string, .required)
                     .field("unique_code", .string, .required)
-                    // ✅ 이 줄을 추가하세요
+                    // ✅ 누락된 필드 추가
                     .field("greeting_message", .string, .required)
+                    // ✅ 기능 설정 필드들도 함께 추가
+                    .field("show_venue_info", .bool)
+                    .field("show_share_button", .bool)
+                    .field("show_ceremony_program", .bool)
+                    .field("show_rsvp_form", .bool)
+                    .field("show_account_info", .bool)
+                    .field("show_photo_gallery", .bool)
                     .unique(on: "unique_code")
                     .create()
             }.flatMap {

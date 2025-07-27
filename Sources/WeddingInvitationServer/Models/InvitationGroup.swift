@@ -42,6 +42,25 @@ final class InvitationGroup: Model, Content, @unchecked Sendable {
     // ✅ 새로 추가할 필드
     @Field(key: "greeting_message")
     var greetingMessage: String
+    
+    // ✅ 여기에 새로운 기능 설정 필드들 추가
+    @Field(key: "show_venue_info")
+    var showVenueInfo: Bool
+
+    @Field(key: "show_share_button")
+    var showShareButton: Bool
+
+    @Field(key: "show_ceremony_program")
+    var showCeremonyProgram: Bool
+
+    @Field(key: "show_rsvp_form")
+    var showRsvpForm: Bool
+
+    @Field(key: "show_account_info")
+    var showAccountInfo: Bool
+
+    @Field(key: "show_photo_gallery")
+    var showPhotoGallery: Bool
 
     // 4. 기본 생성자: Fluent가 데이터베이스에서 데이터를 읽어올 때 사용합니다.
     init() { }
@@ -52,17 +71,55 @@ final class InvitationGroup: Model, Content, @unchecked Sendable {
         self.groupName = groupName
         self.groupType = groupType
         self.uniqueCode = Self.generateSecureCode()
-        // ✅ 기본 인사말 추가
         self.greetingMessage = ""
+        
+        // ✅ 새로 추가: 그룹 타입별 기본 기능 설정
+        let defaultFeatures = getDefaultFeatures(for: groupType)
+        self.showVenueInfo = defaultFeatures.showVenueInfo
+        self.showShareButton = defaultFeatures.showShareButton
+        self.showCeremonyProgram = defaultFeatures.showCeremonyProgram
+        self.showRsvpForm = defaultFeatures.showRsvpForm
+        self.showAccountInfo = defaultFeatures.showAccountInfo
+        self.showPhotoGallery = defaultFeatures.showPhotoGallery
     }
 
-    // ✅ greetingMessage를 받는 새 생성자 추가
+    // greetingMessage를 받는 생성자도 수정
     init(groupName: String, groupType: String, greetingMessage: String) {
         self.id = nil
         self.groupName = groupName
         self.groupType = groupType
         self.uniqueCode = Self.generateSecureCode()
         self.greetingMessage = greetingMessage
+        
+        // ✅ 새로 추가: 그룹 타입별 기본 기능 설정
+        let defaultFeatures = getDefaultFeatures(for: groupType)
+        self.showVenueInfo = defaultFeatures.showVenueInfo
+        self.showShareButton = defaultFeatures.showShareButton
+        self.showCeremonyProgram = defaultFeatures.showCeremonyProgram
+        self.showRsvpForm = defaultFeatures.showRsvpForm
+        self.showAccountInfo = defaultFeatures.showAccountInfo
+        self.showPhotoGallery = defaultFeatures.showPhotoGallery
+    }
+
+    // ✅ 새로 추가: 그룹 타입별 기본 기능 설정을 반환하는 헬퍼 메서드
+    private func getDefaultFeatures(for groupType: String) -> (
+        showVenueInfo: Bool,
+        showShareButton: Bool,
+        showCeremonyProgram: Bool,
+        showRsvpForm: Bool,
+        showAccountInfo: Bool,
+        showPhotoGallery: Bool
+    ) {
+        switch groupType {
+        case "WEDDING_GUEST":
+            return (true, false, true, true, false, true)
+        case "PARENTS_GUEST":
+            return (false, true, false, false, true, true)
+        case "COMPANY_GUEST":
+            return (false, false, false, false, false, true)
+        default:
+            return (false, false, false, false, false, true)
+        }
     }
     
     // 5. 사용자 정의 생성자: 우리가 코드로 새로운 그룹을 만들 때 사용합니다.
