@@ -32,7 +32,7 @@ struct AdminController: RouteCollection {
             throw Abort(.unauthorized, reason: "아이디 또는 비밀번호가 올바르지 않습니다.")
         }
         
-        // 3. 비밀번호 검증
+        // 3. 임시 비밀번호 검증 (테스트용)
         guard try adminUser.verify(password: loginRequest.password) else {
             throw Abort(.unauthorized, reason: "아이디 또는 비밀번호가 올바르지 않습니다.")
         }
