@@ -50,6 +50,10 @@ func routes(_ app: Application) throws {
         }
     }
     
+    app.get("run-migrations") { req async throws -> String in
+        try await app.autoMigrate()
+        return "✅ PostgreSQL 마이그레이션이 성공적으로 완료되었습니다!"
+    }
     
     // 기본 루트 - 서버 상태 확인용
     app.get { req async in
@@ -68,6 +72,7 @@ func routes(_ app: Application) throws {
     try app.register(collection: InvitationController())
     // routes.swift 파일의 맨 아래에 다음 줄을 추가하세요
     try app.register(collection: WeddingController())
+    
     
     // API 그룹 생성 (/api/...)
     let api = app.grouped("api")
