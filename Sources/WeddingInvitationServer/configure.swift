@@ -1,6 +1,5 @@
 @preconcurrency import Fluent
 @preconcurrency import FluentSQLiteDriver
-@preconcurrency import FluentPostgreSQLDriver
 @preconcurrency import Vapor
 @preconcurrency import JWT
 
