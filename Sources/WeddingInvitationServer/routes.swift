@@ -55,7 +55,11 @@ func routes(_ app: Application) throws {
     app.get { req async in
         return "Wedding Invitation Server is running! 💍"
     }
-    
+        
+    // Hello 테스트 경로
+    app.get("hello") { req async in
+        return "Hello, world!"
+    }
     // ✅ RsvpController 등록 아래에 추가
     try app.register(collection: RsvpController())
     // AdminController 등록
