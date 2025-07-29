@@ -1,19 +1,12 @@
 @preconcurrency import Fluent
-@preconcurrency import FluentSQLiteDriver
+@preconcurrency import FluentPostgresDriver
 @preconcurrency import Vapor
 @preconcurrency import JWT
 
 // 애플리케이션의 서비스와 설정을 구성하는 함수
 public func configure(_ app: Application) async throws {
     // 🗃️ PostgreSQL 데이터베이스 설정
-    // Railway에서 제공하는 DATABASE_URL 환경변수 사용
-//    if let databaseURL = Environment.get("DATABASE_URL") {
-//        app.databases.use(try .postgres(url: databaseURL), as: .psql)
-//    } else {
-//        // 로컬 개발용 fallback (SQLite)
-//        app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
-//    }
-    app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+    try app.databases.use(.postgres(url: Environment.get("DATABASE_URL")!), as: .psql)
 
     
     // 🔐 JWT 설정 추가
