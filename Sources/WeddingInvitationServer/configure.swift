@@ -8,12 +8,14 @@
 public func configure(_ app: Application) async throws {
     // 🗃️ PostgreSQL 데이터베이스 설정
     // Railway에서 제공하는 DATABASE_URL 환경변수 사용
-    if let databaseURL = Environment.get("DATABASE_URL") {
-        app.databases.use(try .postgres(url: databaseURL), as: .psql)
-    } else {
-        // 로컬 개발용 fallback (SQLite)
-        app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
-    }
+//    if let databaseURL = Environment.get("DATABASE_URL") {
+//        app.databases.use(try .postgres(url: databaseURL), as: .psql)
+//    } else {
+//        // 로컬 개발용 fallback (SQLite)
+//        app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+//    }
+    app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+
     
     // 🔐 JWT 설정 추가
     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-make-it-very-long-and-secure"
