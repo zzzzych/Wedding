@@ -6,25 +6,13 @@
 // 애플리케이션의 서비스와 설정을 구성하는 함수
 public func configure(_ app: Application) async throws {
     // 🗃️ PostgreSQL 데이터베이스 설정
-    // PostgreSQL 연결 URL 파싱
+    // ✅ PostgreSQL 데이터베이스 설정 (SSL 비활성화)
     guard let databaseURL = Environment.get("DATABASE_URL") else {
         fatalError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     }
-
-    // SSL 무시 설정으로 PostgreSQL 연결
-    var tlsConfig = TLSConfiguration.makeClientConfiguration()
-    tlsConfig.certificateVerification = .none
-
-    // 간단한 PostgreSQL 연결 (SSL 문제 해결)
-    try app.databases.use(.postgres(url: Environment.get("DATABASE_URL")! + "?sslmode=disable"), as: .psql)
-    try app.databases.use(.postgres(url: databaseURL), as: .psql)
     
-    // SSL 설정 없이 PostgreSQL 연결
-    if let databaseURL = Environment.get("DATABASE_URL") {
-        try app.databases.use(.postgres(url: databaseURL), as: .psql)
-    } else {
-        fatalError("DATABASE_URL이 설정되지 않았습니다.")
-    }
+    // PostgreSQL URL을 파싱해서 SSL을 비활성화하고 연결
+    try app.databases.use(.postgres(url: databaseURL + "?sslmode=disable"), as: .psql)
     
     // 🔐 JWT 설정 추가
     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-make-it-very-long-and-secure"
