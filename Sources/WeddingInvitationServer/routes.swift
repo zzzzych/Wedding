@@ -139,19 +139,53 @@ func routes(_ app: Application) throws {
         return response
     }
     
-    // ✅ 데이터베이스 완전 초기화 API
+    // ✅ 데이터베이스 완전 초기화 + 기본 데이터 자동 생성 API
     app.get("reset-database") { req async throws -> String in
         do {
-            // 모든 테이블 데이터 삭제
+            // 1. 모든 테이블 데이터 삭제
             try await InvitationGroup.query(on: req.db).delete()
             try await RsvpResponse.query(on: req.db).delete()
             try await AdminUser.query(on: req.db).delete()
             try await WeddingInfo.query(on: req.db).delete()
             
-            // 마이그레이션 재실행
+            // 2. 마이그레이션 재실행
             try await req.application.autoMigrate()
             
-            return "✅ 데이터베이스가 완전히 초기화되었습니다!"
+            // 3. ✅ 기본 결혼식 정보 자동 생성
+            let weddingInfo = WeddingInfo()
+            weddingInfo.groomName = "이지환"
+            weddingInfo.brideName = "이윤진"
+            weddingInfo.weddingDate = Date()
+            weddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+            weddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
+            weddingInfo.venueDetail = "19층"
+            weddingInfo.greetingMessage = "두 손 잡고 걷다보니 즐거움만 가득, 더 큰 즐거움의 시작에 함께 해주세요."
+            weddingInfo.ceremonyProgram = "오후 6시 예식"
+            weddingInfo.accountInfo = ["농협 121065-56-105215 (고인옥 / 신랑母)"]
+            
+            try await weddingInfo.save(on: req.db)
+            
+            // 4. ✅ 관리자 계정 자동 생성 (환경변수 기반)
+            if let adminUsername = Environment.get("ADMIN_USERNAME"),
+               let adminPassword = Environment.get("ADMIN_PASSWORD") {
+                let hashedPassword = try Bcrypt.hash(adminPassword)
+                let adminUser = AdminUser()
+                adminUser.username = adminUsername
+                adminUser.passwordHash = hashedPassword
+                try await adminUser.save(on: req.db)
+            }
+            
+            // 5. ✅ 테스트 그룹 자동 생성
+            let testGroup = InvitationGroup(
+                groupName: "결혼식 초대 그룹",
+                groupType: GroupType.weddingGuest.rawValue,
+                greetingMessage: "저희의 소중한 날에 함께해주셔서 감사합니다."
+            )
+            testGroup.uniqueCode = "wedding123"
+            try await testGroup.save(on: req.db)
+            
+            return "✅ 데이터베이스 초기화 완료!\n✅ 기본 결혼식 정보 생성\n✅ 관리자 계정 생성\n✅ 테스트 그룹(wedding123) 생성"
+            
         } catch {
             return "❌ 초기화 실패: \(error)"
         }
@@ -181,6 +215,56 @@ func routes(_ app: Application) throws {
             }
         } catch {
             throw Abort(.internalServerError, reason: "계정 업데이트 실패: \(error)")
+        }
+    }
+    
+    // ✅ 기본 데이터 확인 및 생성 API
+    app.get("ensure-default-data") { req async throws -> String in
+        var messages: [String] = []
+        
+        do {
+            // 1. 결혼식 정보 확인 및 생성
+            let existingWedding = try await WeddingInfo.query(on: req.db).first()
+            if existingWedding == nil {
+                let weddingInfo = WeddingInfo()
+                weddingInfo.groomName = "이지환"
+                weddingInfo.brideName = "이윤진"
+                weddingInfo.weddingDate = Date()
+                weddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+                weddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
+                weddingInfo.venueDetail = "19층"
+                weddingInfo.greetingMessage = "두 손 잡고 걷다보니 즐거움만 가득, 더 큰 즐거움의 시작에 함께 해주세요."
+                weddingInfo.ceremonyProgram = "오후 6시 예식"
+                weddingInfo.accountInfo = ["농협 121065-56-105215 (고인옥 / 신랑母)"]
+                
+                try await weddingInfo.save(on: req.db)
+                messages.append("✅ 기본 결혼식 정보 생성")
+            } else {
+                messages.append("✅ 결혼식 정보 존재")
+            }
+            
+            // 2. 테스트 그룹 확인 및 생성
+            let existingGroup = try await InvitationGroup.query(on: req.db)
+                .filter(\.$uniqueCode == "wedding123")
+                .first()
+            
+            if existingGroup == nil {
+                let testGroup = InvitationGroup(
+                    groupName: "결혼식 초대 그룹",
+                    groupType: GroupType.weddingGuest.rawValue,
+                    greetingMessage: "저희의 소중한 날에 함께해주셔서 감사합니다."
+                )
+                testGroup.uniqueCode = "wedding123"
+                try await testGroup.save(on: req.db)
+                messages.append("✅ 테스트 그룹(wedding123) 생성")
+            } else {
+                messages.append("✅ 테스트 그룹 존재")
+            }
+            
+            return messages.joined(separator: "\n")
+            
+        } catch {
+            return "❌ 기본 데이터 확인 실패: \(error)"
         }
     }
 }
