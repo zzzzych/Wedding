@@ -190,4 +190,6 @@ struct UpdateGroupRequest: Content {
     let groupName: String?
     /// 그룹별 인사말 (옵셔널)
     let greetingMessage: String?
+    /// 고유 URL 코드 (옵셔널)  🆕 추가
+    let uniqueCode: String?
 }

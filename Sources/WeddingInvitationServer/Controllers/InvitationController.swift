@@ -253,7 +253,22 @@ struct InvitationController: RouteCollection {
         if let greetingMessage = updateRequest.greetingMessage {
             group.greetingMessage = greetingMessage
         }
-        
+
+        // 🆕 uniqueCode 업데이트 로직 추가
+        if let uniqueCode = updateRequest.uniqueCode, !uniqueCode.isEmpty {
+            // uniqueCode 중복 검사 (자신 제외)
+            let existingGroup = try await InvitationGroup.query(on: req.db)
+                .filter(\.$uniqueCode == uniqueCode)
+                .filter(\.$id != groupId) // 자신은 제외
+                .first()
+            
+            if existingGroup != nil {
+                throw Abort(.conflict, reason: "이미 존재하는 URL 코드입니다.")
+            }
+            
+            group.uniqueCode = uniqueCode
+        }
+
         // 5. 데이터베이스에 저장
         try await group.save(on: req.db)
         
