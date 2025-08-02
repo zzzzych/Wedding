@@ -69,7 +69,7 @@ func routes(_ app: Application) throws {
     // AdminController 등록
     try app.register(collection: AdminController())
     // InvitationController 등록 - 누락된 부분 추가
-    try app.register(collection: InvitationController())
+//    try app.register(collection: InvitationController())
     // routes.swift 파일의 맨 아래에 다음 줄을 추가하세요
     try app.register(collection: WeddingController())
     
@@ -137,5 +137,38 @@ func routes(_ app: Application) throws {
             body: .init(string: jsonString)
         )
         return response
+    }
+    
+    // ✅ 임시 단순 그룹 조회 API 추가
+    app.get("api", "admin", "groups") { req async throws -> Response in
+        do {
+            let groups = try await InvitationGroup.query(on: req.db).all()
+            
+            // 단순 JSON 응답 생성
+            let simpleGroups = groups.map { group in
+                return [
+                    "id": group.id?.uuidString ?? "",
+                    "groupName": group.groupName,
+                    "groupType": group.groupType,
+                    "uniqueCode": group.uniqueCode,
+                    "greetingMessage": group.greetingMessage,
+                    "totalResponses": 0,
+                    "attendingResponses": 0
+                ]
+            }
+            
+            let jsonData = try JSONSerialization.data(withJSONObject: simpleGroups)
+            let response = Response(status: .ok, body: .init(data: jsonData))
+            response.headers.contentType = .json
+            return response
+            
+        } catch {
+            print("❌ 그룹 조회 에러:", error)
+            let errorResponse = ["error": true, "message": "그룹 조회 실패: \(error)"]
+            let jsonData = try JSONSerialization.data(withJSONObject: errorResponse)
+            let response = Response(status: .internalServerError, body: .init(data: jsonData))
+            response.headers.contentType = .json
+            return response
+        }
     }
 }
