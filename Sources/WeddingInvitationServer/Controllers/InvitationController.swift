@@ -155,7 +155,6 @@ struct InvitationController: RouteCollection {
                 .count()
             
             // 통계 정보가 포함된 그룹 데이터 생성
-            // ✅ 수정된 코드 (greetingMessage 추가)
             let groupWithStats = GroupWithStats(
                 id: group.id!,
                 groupName: group.groupName,
@@ -163,7 +162,13 @@ struct InvitationController: RouteCollection {
                 uniqueCode: group.uniqueCode,
                 greetingMessage: group.greetingMessage,
                 totalResponses: responseCount,
-                attendingResponses: attendingCount
+                attendingResponses: attendingCount,
+                showVenueInfo: group.showVenueInfo,
+                showShareButton: group.showShareButton,
+                showCeremonyProgram: group.showCeremonyProgram,
+                showRsvpForm: group.showRsvpForm,
+                showAccountInfo: group.showAccountInfo,
+                showPhotoGallery: group.showPhotoGallery
             )
             
             groupsWithStats.append(groupWithStats)

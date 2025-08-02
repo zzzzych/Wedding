@@ -117,9 +117,7 @@ struct RsvpSummary: Content {
 }
 
 // MARK: - 그룹 관련 공통 모델들
-
 /// 통계 정보가 포함된 그룹 데이터
-/// 관리자가 그룹 목록을 볼 때 각 그룹의 응답 현황을 함께 보여주기 위한 구조체입니다
 struct GroupWithStats: Content {
     /// 그룹 고유 ID
     let id: UUID
@@ -135,6 +133,20 @@ struct GroupWithStats: Content {
     let totalResponses: Int
     /// 참석 응답 수 (해당 그룹에서 참석한다고 응답한 사람 수)
     let attendingResponses: Int
+    
+    // 🆕 기능 설정 필드들 추가
+    /// 오시는 길 정보 표시 여부
+    let showVenueInfo: Bool?
+    /// 공유 버튼 표시 여부
+    let showShareButton: Bool?
+    /// 본식 순서 표시 여부
+    let showCeremonyProgram: Bool?
+    /// 참석 응답 폼 표시 여부
+    let showRsvpForm: Bool?
+    /// 계좌 정보 표시 여부
+    let showAccountInfo: Bool?
+    /// 포토 갤러리 표시 여부
+    let showPhotoGallery: Bool?
 }
 
 /// 전체 그룹 목록 응답
