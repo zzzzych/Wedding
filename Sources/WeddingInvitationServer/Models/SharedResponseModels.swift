@@ -190,6 +190,20 @@ struct UpdateGroupRequest: Content {
     let groupName: String?
     /// 그룹별 인사말 (옵셔널)
     let greetingMessage: String?
-    /// 고유 URL 코드 (옵셔널)  🆕 추가
+    /// 고유 URL 코드 (옵셔널)
     let uniqueCode: String?
+    
+    // 🆕 기능 설정 필드들 추가
+    /// 오시는 길 정보 표시 여부 (옵셔널)
+    let showVenueInfo: Bool?
+    /// 공유 버튼 표시 여부 (옵셔널)
+    let showShareButton: Bool?
+    /// 본식 순서 표시 여부 (옵셔널)
+    let showCeremonyProgram: Bool?
+    /// 참석 응답 폼 표시 여부 (옵셔널)
+    let showRsvpForm: Bool?
+    /// 계좌 정보 표시 여부 (옵셔널)
+    let showAccountInfo: Bool?
+    /// 포토 갤러리 표시 여부 (옵셔널)
+    let showPhotoGallery: Bool?
 }

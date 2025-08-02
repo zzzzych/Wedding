@@ -268,6 +268,34 @@ struct InvitationController: RouteCollection {
             
             group.uniqueCode = uniqueCode
         }
+        
+        // 🆕 기능 설정 업데이트 로직 추가
+        if let showVenueInfo = updateRequest.showVenueInfo {
+            group.showVenueInfo = showVenueInfo
+        }
+
+        if let showShareButton = updateRequest.showShareButton {
+            group.showShareButton = showShareButton
+        }
+
+        if let showCeremonyProgram = updateRequest.showCeremonyProgram {
+            group.showCeremonyProgram = showCeremonyProgram
+        }
+
+        if let showRsvpForm = updateRequest.showRsvpForm {
+            group.showRsvpForm = showRsvpForm
+        }
+
+        if let showAccountInfo = updateRequest.showAccountInfo {
+            group.showAccountInfo = showAccountInfo
+        }
+
+        if let showPhotoGallery = updateRequest.showPhotoGallery {
+            group.showPhotoGallery = showPhotoGallery
+        }
+
+        // 5. 데이터베이스에 저장
+        try await group.save(on: req.db)
 
         // 5. 데이터베이스에 저장
         try await group.save(on: req.db)
