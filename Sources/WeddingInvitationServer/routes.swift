@@ -69,7 +69,7 @@ func routes(_ app: Application) throws {
     // AdminController 등록
     try app.register(collection: AdminController())
     // InvitationController 등록 - 누락된 부분 추가
-//    try app.register(collection: InvitationController())
+    try app.register(collection: InvitationController())
     // routes.swift 파일의 맨 아래에 다음 줄을 추가하세요
     try app.register(collection: WeddingController())
     
@@ -139,36 +139,48 @@ func routes(_ app: Application) throws {
         return response
     }
     
-    // ✅ 임시 단순 그룹 조회 API 추가
-    app.get("api", "admin", "groups") { req async throws -> Response in
+    // ✅ 데이터베이스 완전 초기화 API
+    app.get("reset-database") { req async throws -> String in
         do {
-            let groups = try await InvitationGroup.query(on: req.db).all()
+            // 모든 테이블 데이터 삭제
+            try await InvitationGroup.query(on: req.db).delete()
+            try await RsvpResponse.query(on: req.db).delete()
+            try await AdminUser.query(on: req.db).delete()
+            try await WeddingInfo.query(on: req.db).delete()
             
-            // 단순 JSON 응답 생성
-            let simpleGroups = groups.map { group in
-                return [
-                    "id": group.id?.uuidString ?? "",
-                    "groupName": group.groupName,
-                    "groupType": group.groupType,
-                    "uniqueCode": group.uniqueCode,
-                    "greetingMessage": group.greetingMessage,
-                    "totalResponses": 0,
-                    "attendingResponses": 0
-                ]
-            }
+            // 마이그레이션 재실행
+            try await req.application.autoMigrate()
             
-            let jsonData = try JSONSerialization.data(withJSONObject: simpleGroups)
-            let response = Response(status: .ok, body: .init(data: jsonData))
-            response.headers.contentType = .json
-            return response
-            
+            return "✅ 데이터베이스가 완전히 초기화되었습니다!"
         } catch {
-            print("❌ 그룹 조회 에러:", error)
-            let errorResponse = ["error": true, "message": "그룹 조회 실패: \(error)"]
-            let jsonData = try JSONSerialization.data(withJSONObject: errorResponse)
-            let response = Response(status: .internalServerError, body: .init(data: jsonData))
-            response.headers.contentType = .json
-            return response
+            return "❌ 초기화 실패: \(error)"
+        }
+    }
+    
+    // ✅ 환경변수 필수인 관리자 계정 업데이트 API
+    app.get("update-admin-from-env") { req async throws -> String in
+        guard let newUsername = Environment.get("ADMIN_USERNAME"),
+              let newPassword = Environment.get("ADMIN_PASSWORD") else {
+            throw Abort(.badRequest, reason: "환경변수 ADMIN_USERNAME 또는 ADMIN_PASSWORD가 설정되지 않았습니다.")
+        }
+        
+        do {
+            let hashedPassword = try Bcrypt.hash(newPassword)
+            
+            if let existingAdmin = try await AdminUser.query(on: req.db).first() {
+                existingAdmin.username = newUsername
+                existingAdmin.passwordHash = hashedPassword
+                try await existingAdmin.save(on: req.db)
+                return "✅ 관리자 계정이 업데이트되었습니다!"
+            } else {
+                let adminUser = AdminUser()
+                adminUser.username = newUsername
+                adminUser.passwordHash = hashedPassword
+                try await adminUser.save(on: req.db)
+                return "✅ 새 관리자 계정이 생성되었습니다!"
+            }
+        } catch {
+            throw Abort(.internalServerError, reason: "계정 업데이트 실패: \(error)")
         }
     }
 }
