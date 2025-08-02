@@ -38,54 +38,94 @@ struct InvitationController: RouteCollection {
     /// 하객이 고유 링크를 통해 접속했을 때 그룹에 맞는 청첩장 정보를 제공합니다
     /// - Parameter req: HTTP 요청 객체 (uniqueCode 파라미터 포함)
     /// - Returns: 그룹별로 필터링된 청첩장 응답 데이터
-    // ✅ 수정된 코드
-    func getInvitation(req: Request) async throws -> InvitationAPIResponse {
-        // 1. URL에서 uniqueCode 파라미터 추출
-        guard let uniqueCode = req.parameters.get("uniqueCode") else {
-            throw Abort(.badRequest, reason: "고유 코드가 필요합니다.")
+    // 기존 getInvitation 함수를 찾아서 다음 코드로 교체하세요
+    func getInvitation(_ req: Request) throws -> EventLoopFuture<InvitationResponse> {
+        // URL에서 고유 코드 추출
+        guard let uniqueCode = req.parameters.get("code") else {
+            throw Abort(.badRequest, reason: "초대 코드가 필요합니다.")
         }
         
-        // 2. uniqueCode로 초대 그룹 찾기
-        guard let invitationGroup = try await InvitationGroup.query(on: req.db)
+        // 먼저 해당 그룹이 존재하는지 확인
+        return InvitationGroup.query(on: req.db)
             .filter(\.$uniqueCode == uniqueCode)
-            .first() else {
-            throw Abort(.notFound, reason: "유효하지 않은 초대 코드입니다.")
-        }
-        
-        // 3. 결혼식 기본 정보 조회
-        guard let weddingInfo = try await WeddingInfo.query(on: req.db)
-            .first() else {
-            throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
-        }
-        
-        // 4. 그룹 타입별 기능 설정
-        // ✅ 수정 후: 데이터베이스에서 실제 설정 값 사용
-        // ✅ 매개변수 순서를 구조체 정의에 맞춰 수정
-        let features = InvitationFeatures(
-            showRsvpForm: invitationGroup.showRsvpForm ?? false,        // 1번째
-            showAccountInfo: invitationGroup.showAccountInfo ?? false,  // 2번째
-            showShareButton: invitationGroup.showShareButton ?? false,  // 3번째
-            showVenueInfo: invitationGroup.showVenueInfo ?? false,      // 4번째
-            showPhotoGallery: invitationGroup.showPhotoGallery ?? true, // 5번째
-            showCeremonyProgram: invitationGroup.showCeremonyProgram ?? false // 6번째
+            .first()
+            .unwrap(or: Abort(.notFound, reason: "존재하지 않는 초대 코드입니다."))
+            .flatMap { group in
+                // wedding_infos 테이블에서 데이터 조회, 없으면 기본 데이터 생성
+                return WeddingInfo.query(on: req.db)
+                    .first()
+                    .flatMap { weddingInfo in
+                        if let existingInfo = weddingInfo {
+                            // 기존 데이터가 있으면 그대로 사용
+                            return self.createInvitationResponse(for: group, with: existingInfo, on: req)
+                        } else {
+                            // 기본 데이터가 없으면 새로 생성
+                            return self.createDefaultWeddingInfo(on: req.db)
+                                .flatMap { newWeddingInfo in
+                                    return self.createInvitationResponse(for: group, with: newWeddingInfo, on: req)
+                                }
+                        }
+                    }
+            }
+    }
+
+    // 기본 웨딩 정보 생성 함수 (새로 추가)
+    private func createDefaultWeddingInfo(on database: Database) -> EventLoopFuture<WeddingInfo> {
+        let defaultWeddingInfo = WeddingInfo(
+            groomName: "이지환",
+            brideName: "이윤진",
+            weddingDate: try! Date("2025-10-25T18:00:00Z", strategy: .iso8601),
+            venueName: "포포인츠 바이셰라톤 조선 서울역점 19층",
+            venueAddress: "서울특별시 용산구 한강대로 366",
+            venueDetail: "두 손 잡고 걸더니 즐거웠던 가을,\n더 큰 즐거움의 시간에 함께 해주세요.\n지환, 윤진 결혼합니다.",
+            venuePhone: "02-6030-8000",
+            kakaoMapUrl: nil,
+            naverMapUrl: nil,
+            googleMapUrl: nil,
+            parkingInfo: nil,
+            transportInfo: nil,
+            greetingMessage: "두 손 잡고 걸더니 즐거웠던 가을,\n더 큰 즐거움의 시간에 함께 해주세요.\n지환, 윤진 결혼합니다.",
+            ceremonyProgram: "17:30 - 18:00 웨딩 세레모니\n18:00 - 19:30 피로연",
+            accountInfo: ["신한은행 110-xxx-xxxxxx (신랑)", "카카오뱅크 3333-xx-xxxxxxx (신부)"]
         )
         
-        // 5. 통합된 장소 정보 생성
-        let weddingLocation = "\(weddingInfo.venueName) \(weddingInfo.venueAddress)"
+        return defaultWeddingInfo.save(on: database).map { defaultWeddingInfo }
+    }
+
+    // 응답 생성 헬퍼 함수 (새로 추가)
+    private func createInvitationResponse(for group: InvitationGroup, with weddingInfo: WeddingInfo, on req: Request) -> EventLoopFuture<InvitationResponse> {
+        // 그룹별 기능 설정 가져오기
+        let features = InvitationFeatures(
+            showVenueInfo: group.showVenueInfo ?? true,
+            showShareButton: group.showShareButton ?? true,
+            showCeremonyProgram: group.showCeremonyProgram ?? true,
+            showRsvpForm: group.showRsvpForm ?? true,
+            showAccountInfo: group.showAccountInfo ?? false,
+            showPhotoGallery: group.showPhotoGallery ?? true
+        )
         
-        // 6. 단순한 응답 형식으로 반환
-        return InvitationAPIResponse(
-            groupName: invitationGroup.groupName,
-            groupType: invitationGroup.groupType,
+        let response = InvitationResponse(
+            id: weddingInfo.id!,
             groomName: weddingInfo.groomName,
             brideName: weddingInfo.brideName,
-            weddingDate: ISO8601DateFormatter().string(from: weddingInfo.weddingDate),
-            weddingLocation: weddingLocation,
-            greetingMessage: invitationGroup.greetingMessage,
+            weddingDate: weddingInfo.weddingDate,
+            venueName: weddingInfo.venueName,
+            venueAddress: weddingInfo.venueAddress,
+            venueDetail: weddingInfo.venueDetail,
+            venuePhone: weddingInfo.venuePhone,
+            kakaoMapUrl: weddingInfo.kakaoMapUrl,
+            naverMapUrl: weddingInfo.naverMapUrl,
+            googleMapUrl: weddingInfo.googleMapUrl,
+            parkingInfo: weddingInfo.parkingInfo,
+            transportInfo: weddingInfo.transportInfo,
+            greetingMessage: group.greetingMessage, // 그룹별 인사말 사용
             ceremonyProgram: weddingInfo.ceremonyProgram,
             accountInfo: weddingInfo.accountInfo,
-            features: features
+            features: features,
+            groupName: group.groupName
         )
+        
+        return req.eventLoop.makeSucceededFuture(response)
     }
     
     
