@@ -102,6 +102,9 @@ struct InvitationController: RouteCollection {
     /// 전체 그룹 목록 조회 (관리자용)
     /// - Method: `GET`
     /// - Path: `/api/admin/groups`
+    /// 전체 그룹 목록 조회 (관리자용)
+    /// - Method: `GET`
+    /// - Path: `/api/admin/groups`
     func getAllGroups(req: Request) async throws -> GroupsListResponse {
         let allGroups = try await InvitationGroup.query(on: req.db)
             .sort(\.$groupName)
@@ -118,8 +121,6 @@ struct InvitationController: RouteCollection {
                 .filter(\.$isAttending == true)
                 .count()
 
-            // SharedResponseModels.swift에 정의된 응답 모델 사용
-            //
             let groupData = GroupWithStats(
                 id: group.id!,
                 groupName: group.groupName,
@@ -140,7 +141,6 @@ struct InvitationController: RouteCollection {
 
         return GroupsListResponse(totalGroups: allGroups.count, groups: groupsWithStats)
     }
-    
     /// 특정 그룹 상세 조회 (관리자용)
     /// - Method: `GET`
     /// - Path: `/api/admin/groups/:groupId`
