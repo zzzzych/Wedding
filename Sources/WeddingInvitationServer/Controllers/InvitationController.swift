@@ -102,44 +102,13 @@ struct InvitationController: RouteCollection {
     /// 전체 그룹 목록 조회 (관리자용)
     /// - Method: `GET`
     /// - Path: `/api/admin/groups`
-    /// 전체 그룹 목록 조회 (관리자용)
-    /// - Method: `GET`
-    /// - Path: `/api/admin/groups`
-    func getAllGroups(req: Request) async throws -> GroupsListResponse {
+    func getAllGroups(req: Request) async throws -> [InvitationGroup] {
+        // ✅ 단순하게 그룹 목록만 반환 (통계 제외)
         let allGroups = try await InvitationGroup.query(on: req.db)
             .sort(\.$groupName)
             .all()
-
-        var groupsWithStats: [GroupWithStats] = []
-        for group in allGroups {
-            let responseCount = try await RsvpResponse.query(on: req.db)
-                .filter(\.$group.$id == group.id!)
-                .count()
-            
-            let attendingCount = try await RsvpResponse.query(on: req.db)
-                .filter(\.$group.$id == group.id!)
-                .filter(\.$isAttending == true)
-                .count()
-
-            let groupData = GroupWithStats(
-                id: group.id!,
-                groupName: group.groupName,
-                groupType: group.groupType,
-                uniqueCode: group.uniqueCode,
-                greetingMessage: group.greetingMessage,
-                totalResponses: responseCount,
-                attendingResponses: attendingCount,
-                showVenueInfo: group.showVenueInfo,
-                showShareButton: group.showShareButton,
-                showCeremonyProgram: group.showCeremonyProgram,
-                showRsvpForm: group.showRsvpForm,
-                showAccountInfo: group.showAccountInfo,
-                showPhotoGallery: group.showPhotoGallery
-            )
-            groupsWithStats.append(groupData)
-        }
-
-        return GroupsListResponse(totalGroups: allGroups.count, groups: groupsWithStats)
+        
+        return allGroups
     }
     /// 특정 그룹 상세 조회 (관리자용)
     /// - Method: `GET`
