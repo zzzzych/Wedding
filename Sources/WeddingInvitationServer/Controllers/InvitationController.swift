@@ -38,28 +38,34 @@ struct InvitationController: RouteCollection {
     /// - Description: 하객이 고유 링크를 통해 접속했을 때 그룹에 맞는 청첩장 정보를 제공합니다.
     /// - Method: `GET`
     /// - Path: `/api/invitation/:uniqueCode`
-        func getInvitation(req: Request) async throws -> InvitationResponse {
-            // 1. URL에서 고유 코드 추출
-            guard let uniqueCode = req.parameters.get("uniqueCode") else { // ✅ "uniqueCode"로 수정
-                throw Abort(.badRequest, reason: "초대 코드가 필요합니다.")
-            }
-
-            // 2. 고유 코드로 초대 그룹 찾기
-            guard let group = try await InvitationGroup.query(on: req.db)
-                .filter(\.$uniqueCode == uniqueCode)
-                .first() else {
-                throw Abort(.notFound, reason: "존재하지 않는 초대 코드입니다.")
-            }
-
-            // 3. 결혼식 정보 조회 (현재는 하나의 정보만 있다고 가정)
-            guard let weddingInfo = try await WeddingInfo.query(on: req.db).first() else {
-                throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다. 관리자에게 문의하세요.")
-            }
-            
-            // 4. 올바른 응답 모델을 사용하여 최종 응답 생성
-            return InvitationResponse.create(from: weddingInfo, and: group)
+    func getInvitation(req: Request) async throws -> InvitationResponse {
+        // 1. URL에서 고유 코드 추출
+        guard let uniqueCode = req.parameters.get("uniqueCode") else {
+            throw Abort(.badRequest, reason: "초대 코드가 필요합니다.")
         }
-    // ...
+
+        // 2. 고유 코드로 초대 그룹 찾기
+        guard let group = try await InvitationGroup.query(on: req.db)
+            .filter(\.$uniqueCode == uniqueCode)
+            .first() else {
+            throw Abort(.notFound, reason: "존재하지 않는 초대 코드입니다.")
+        }
+
+        // 3. ✅ 기본 결혼식 정보 하드코딩 (데이터베이스 의존성 제거)
+        let defaultWeddingInfo = WeddingInfo()
+        defaultWeddingInfo.groomName = "이지환"
+        defaultWeddingInfo.brideName = "이윤진"
+        defaultWeddingInfo.weddingDate = Date()
+        defaultWeddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+        defaultWeddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
+        defaultWeddingInfo.venueDetail = "19층"
+        defaultWeddingInfo.greetingMessage = "두 손 잡고 걷다보니 즐거움만 가득, 더 큰 즐거움의 시작에 함께 해주세요."
+        defaultWeddingInfo.ceremonyProgram = "오후 6시 예식"
+        defaultWeddingInfo.accountInfo = ["농협 121065-56-105215 (고인옥 / 신랑母)"]
+        
+        // 4. 응답 생성
+        return InvitationResponse.create(from: defaultWeddingInfo, and: group)
+    }
 
     // MARK: - 관리자용 그룹 관리 API 기능
     
