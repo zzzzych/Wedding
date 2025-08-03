@@ -76,10 +76,8 @@ struct WeddingController: RouteCollection {
         existingWeddingInfo.venueName = updateData.venueName
         existingWeddingInfo.venueAddress = updateData.venueAddress
         existingWeddingInfo.venueDetail = updateData.venueDetail
-        existingWeddingInfo.venuePhone = updateData.venuePhone
         existingWeddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
         existingWeddingInfo.naverMapUrl = updateData.naverMapUrl
-        existingWeddingInfo.googleMapUrl = updateData.googleMapUrl
         existingWeddingInfo.parkingInfo = updateData.parkingInfo
         existingWeddingInfo.transportInfo = updateData.transportInfo
         existingWeddingInfo.greetingMessage = updateData.greetingMessage
@@ -122,17 +120,11 @@ struct WeddingController: RouteCollection {
         if let venueDetail = patchData.venueDetail {
             existingWeddingInfo.venueDetail = venueDetail
         }
-        if let venuePhone = patchData.venuePhone {
-            existingWeddingInfo.venuePhone = venuePhone
-        }
         if let kakaoMapUrl = patchData.kakaoMapUrl {
             existingWeddingInfo.kakaoMapUrl = kakaoMapUrl
         }
         if let naverMapUrl = patchData.naverMapUrl {
             existingWeddingInfo.naverMapUrl = naverMapUrl
-        }
-        if let googleMapUrl = patchData.googleMapUrl {
-            existingWeddingInfo.googleMapUrl = googleMapUrl
         }
         if let parkingInfo = patchData.parkingInfo {
             existingWeddingInfo.parkingInfo = parkingInfo
@@ -167,10 +159,8 @@ struct WeddingInfoUpdateRequest: Content {
     let venueName: String
     let venueAddress: String
     let venueDetail: String
-    let venuePhone: String?
     let kakaoMapUrl: String?
     let naverMapUrl: String?
-    let googleMapUrl: String?
     let parkingInfo: String?
     let transportInfo: String?
     let greetingMessage: String
@@ -186,10 +176,8 @@ struct WeddingInfoPatchRequest: Content {
     let venueName: String?
     let venueAddress: String?
     let venueDetail: String?
-    let venuePhone: String?
     let kakaoMapUrl: String?
     let naverMapUrl: String?
-    let googleMapUrl: String?
     let parkingInfo: String?
     let transportInfo: String?
     let greetingMessage: String?
