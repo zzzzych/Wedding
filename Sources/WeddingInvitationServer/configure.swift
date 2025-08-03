@@ -20,12 +20,14 @@ public func configure(_ app: Application) async throws {
     
     // 🌐 CORS 설정 - React 앱에서 API 호출 허용
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .originBased,          // Origin 기반 허용
-        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS], // 허용할 HTTP 메서드
-        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith] // 허용할 헤더
+        allowedOrigin: .all, // 개발 단계에서는 모든 origin 허용
+        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith]
     )
-    let cors = CORSMiddleware(configuration: corsConfiguration)
-    app.middleware.use(cors, at: .beginning) // CORS 미들웨어를 가장 먼저 적용
+    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
+    
+    // CORS 미들웨어를 앱에 추가
+    app.middleware.use(corsMiddleware, at: .beginning)
     
     // 🔄 마이그레이션 등록 - 새로 생성한 마이그레이션 추가
     // 마이그레이션 추가 - 순서가 중요합니다!
