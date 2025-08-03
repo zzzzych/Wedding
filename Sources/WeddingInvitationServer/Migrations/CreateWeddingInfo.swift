@@ -24,16 +24,12 @@ struct CreateWeddingInfo: AsyncMigration {
             .field("venue_name", .string, .required)
             // 📍 예식장 주소
             .field("venue_address", .string, .required)
-            // 📝 예식장 상세 정보
-            .field("venue_detail", .string)
             // 📞 예식장 전화번호
             .field("venue_phone", .string)
             // 🗺️ 카카오맵 URL
             .field("kakao_map_url", .string)
             // 🗺️ 네이버맵 URL
             .field("naver_map_url", .string)
-            // 🗺️ 구글맵 URL
-            .field("google_map_url", .string)
             // 🚗 주차 안내
             .field("parking_info", .string)
             // 🚌 교통 안내

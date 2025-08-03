@@ -76,9 +76,8 @@ func routes(_ app: Application) throws {
                 weddingInfo.groomName = "이지환"
                 weddingInfo.brideName = "이윤진"
                 weddingInfo.weddingDate = Date()
-                weddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+                weddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역 19층"
                 weddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
-                weddingInfo.venueDetail = "19층"
                 weddingInfo.greetingMessage = "두 손 잡고 걷다보니 즐거움만 가득, 더 큰 즐거움의 시작에 함께 해주세요."
                 weddingInfo.ceremonyProgram = "오후 6시 예식"
                 weddingInfo.accountInfo = ["농협 121065-56-105215 (고인옥 / 신랑母)"]

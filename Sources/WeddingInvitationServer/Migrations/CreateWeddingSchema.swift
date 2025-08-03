@@ -21,13 +21,11 @@ struct CreateWeddingSchema: Migration {
             // === 새로운 웨딩홀 정보 필드들 ===
             .field("venue_name", .string, .required)
             .field("venue_address", .string, .required)
-            .field("venue_detail", .string, .required)
             .field("venue_phone", .string)
             
             // === 지도 링크 필드들 ===
             .field("kakao_map_url", .string)
             .field("naver_map_url", .string)
-            .field("google_map_url", .string)
             
             // === 교통/주차 정보 ===
             .field("parking_info", .string)

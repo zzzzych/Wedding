@@ -25,7 +25,6 @@ struct FilteredWeddingInfo: Content {
     // === 웨딩홀 정보 (결혼식 초대 그룹만) ===
     let venueName: String?              // 웨딩홀 이름
     let venueAddress: String?           // 기본 주소
-    let venueDetail: String?            // 상세 위치
     
     // === 지도 및 길찾기 (결혼식 초대 그룹만) ===
     let kakaoMapUrl: String?            // 카카오맵 링크
@@ -51,7 +50,6 @@ struct FilteredWeddingInfo: Content {
             // 결혼식 초대 그룹: 모든 웨딩홀 및 지도 정보 표시
             self.venueName = weddingInfo.venueName
             self.venueAddress = weddingInfo.venueAddress
-            self.venueDetail = weddingInfo.venueDetail
             self.kakaoMapUrl = weddingInfo.kakaoMapUrl
             self.naverMapUrl = weddingInfo.naverMapUrl
             self.parkingInfo = weddingInfo.parkingInfo
@@ -65,7 +63,6 @@ struct FilteredWeddingInfo: Content {
             // 부모님 그룹: 웨딩홀/지도 정보 숨김, 계좌 정보만 표시
             self.venueName = nil
             self.venueAddress = nil
-            self.venueDetail = nil
             self.kakaoMapUrl = nil
             self.naverMapUrl = nil
             self.parkingInfo = nil
@@ -77,7 +74,6 @@ struct FilteredWeddingInfo: Content {
             // 회사 그룹: 모든 상세 정보 숨김
             self.venueName = nil
             self.venueAddress = nil
-            self.venueDetail = nil
             self.kakaoMapUrl = nil
             self.naverMapUrl = nil
             self.parkingInfo = nil

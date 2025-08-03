@@ -57,9 +57,8 @@ struct InvitationController: RouteCollection {
         defaultWeddingInfo.groomName = "이지환"
         defaultWeddingInfo.brideName = "이윤진"
         defaultWeddingInfo.weddingDate = Date()
-        defaultWeddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역"
+        defaultWeddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역 19층"
         defaultWeddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
-        defaultWeddingInfo.venueDetail = "19층"
         defaultWeddingInfo.kakaoMapUrl = "https://place.map.kakao.com/1821839394"
         defaultWeddingInfo.naverMapUrl = "https://naver.me/FG7xPnTx"
         defaultWeddingInfo.parkingInfo = "포포인츠 바이 쉐라톤 조선 서울역 주차장 지하 2-4층"

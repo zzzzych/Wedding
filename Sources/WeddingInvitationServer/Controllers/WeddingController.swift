@@ -75,7 +75,6 @@ struct WeddingController: RouteCollection {
         existingWeddingInfo.weddingDate = updateData.weddingDate
         existingWeddingInfo.venueName = updateData.venueName
         existingWeddingInfo.venueAddress = updateData.venueAddress
-        existingWeddingInfo.venueDetail = updateData.venueDetail
         existingWeddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
         existingWeddingInfo.naverMapUrl = updateData.naverMapUrl
         existingWeddingInfo.parkingInfo = updateData.parkingInfo
@@ -117,9 +116,6 @@ struct WeddingController: RouteCollection {
         if let venueAddress = patchData.venueAddress {
             existingWeddingInfo.venueAddress = venueAddress
         }
-        if let venueDetail = patchData.venueDetail {
-            existingWeddingInfo.venueDetail = venueDetail
-        }
         if let kakaoMapUrl = patchData.kakaoMapUrl {
             existingWeddingInfo.kakaoMapUrl = kakaoMapUrl
         }
@@ -158,7 +154,6 @@ struct WeddingInfoUpdateRequest: Content {
     let weddingDate: Date
     let venueName: String
     let venueAddress: String
-    let venueDetail: String
     let kakaoMapUrl: String?
     let naverMapUrl: String?
     let parkingInfo: String?
@@ -175,7 +170,6 @@ struct WeddingInfoPatchRequest: Content {
     let weddingDate: Date?
     let venueName: String?
     let venueAddress: String?
-    let venueDetail: String?
     let kakaoMapUrl: String?
     let naverMapUrl: String?
     let parkingInfo: String?

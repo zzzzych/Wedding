@@ -30,9 +30,6 @@ final class WeddingInfo: Model, @unchecked Sendable, Content  {
     @Field(key: "venue_address")
     var venueAddress: String           // "서울 강남구 테헤란로 123"
 
-    @Field(key: "venue_detail")
-    var venueDetail: String            // "3층 그레이스홀"
-
     // === 지도 및 길찾기 정보 ===
     @Field(key: "kakao_map_url")
     var kakaoMapUrl: String?           // 카카오맵 공유 링크
@@ -67,7 +64,6 @@ final class WeddingInfo: Model, @unchecked Sendable, Content  {
         weddingDate: Date,
         venueName: String,
         venueAddress: String,
-        venueDetail: String,
         kakaoMapUrl: String?,
         naverMapUrl: String?,
         parkingInfo: String?,
@@ -82,7 +78,6 @@ final class WeddingInfo: Model, @unchecked Sendable, Content  {
         self.weddingDate = weddingDate
         self.venueName = venueName
         self.venueAddress = venueAddress
-        self.venueDetail = venueDetail
         self.kakaoMapUrl = kakaoMapUrl
         self.naverMapUrl = naverMapUrl
         self.parkingInfo = parkingInfo

@@ -17,7 +17,6 @@ struct UpdateWeddingInfoSchema: Migration {
             // 새로운 웨딩홀 정보 필드들 추가
             .field("venue_name", .string, .required)           // 웨딩홀 이름
             .field("venue_address", .string, .required)        // 기본 주소
-            .field("venue_detail", .string, .required)         // 상세 위치
             
             // 지도 링크 필드들 추가
             .field("kakao_map_url", .string)                   // 카카오맵 링크
@@ -35,7 +34,6 @@ struct UpdateWeddingInfoSchema: Migration {
             // 추가된 필드들 삭제
             .deleteField("venue_name")
             .deleteField("venue_address")
-            .deleteField("venue_detail")
             .deleteField("kakao_map_url")
             .deleteField("naver_map_url")
             .deleteField("parking_info")
