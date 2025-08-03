@@ -19,10 +19,25 @@ public func configure(_ app: Application) async throws {
     app.jwt.signers.use(.hs256(key: jwtSecret))
     
     // 🌐 CORS 설정 - React 앱에서 API 호출 허용
+    // 🌐 CORS 설정 - React 앱에서 API 호출 허용 (수정됨)
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .all, // 개발 단계에서는 모든 origin 허용
-        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS],
-        allowedHeaders: [.accept, .authorization, .contentType, .origin, .xRequestedWith]
+        allowedOrigin: .any([
+            "https://leelee.kr",
+            "http://localhost:3000",
+            "http://127.0.0.1:3000"
+        ]),
+        allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .HEAD],
+        allowedHeaders: [
+            .accept,
+            .authorization,
+            .contentType,
+            .origin,
+            .xRequestedWith,
+            .userAgent,
+            .accessControlAllowOrigin,
+            .accessControlAllowHeaders,
+            .accessControlAllowMethods
+        ]
     )
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
     
