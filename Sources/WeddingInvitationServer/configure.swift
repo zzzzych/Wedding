@@ -21,11 +21,7 @@ public func configure(_ app: Application) async throws {
     // 🌐 CORS 설정 - React 앱에서 API 호출 허용
     // 🌐 CORS 설정 - React 앱에서 API 호출 허용 (수정됨)
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .any([
-            "https://leelee.kr",
-            "http://localhost:3000",
-            "http://127.0.0.1:3000"
-        ]),
+        allowedOrigin: .all,
         allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .HEAD],
         allowedHeaders: [
             .accept,
