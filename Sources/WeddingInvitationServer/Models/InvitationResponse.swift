@@ -26,12 +26,10 @@ struct FilteredWeddingInfo: Content {
     let venueName: String?              // 웨딩홀 이름
     let venueAddress: String?           // 기본 주소
     let venueDetail: String?            // 상세 위치
-    let venuePhone: String?             // 연락처
     
     // === 지도 및 길찾기 (결혼식 초대 그룹만) ===
     let kakaoMapUrl: String?            // 카카오맵 링크
     let naverMapUrl: String?            // 네이버지도 링크
-    let googleMapUrl: String?           // 구글맵 링크
     let parkingInfo: String?            // 주차 안내
     let transportInfo: String?          // 대중교통 안내
     
@@ -54,10 +52,8 @@ struct FilteredWeddingInfo: Content {
             self.venueName = weddingInfo.venueName
             self.venueAddress = weddingInfo.venueAddress
             self.venueDetail = weddingInfo.venueDetail
-            self.venuePhone = weddingInfo.venuePhone
             self.kakaoMapUrl = weddingInfo.kakaoMapUrl
             self.naverMapUrl = weddingInfo.naverMapUrl
-            self.googleMapUrl = weddingInfo.googleMapUrl
             self.parkingInfo = weddingInfo.parkingInfo
             self.transportInfo = weddingInfo.transportInfo
             
@@ -70,10 +66,8 @@ struct FilteredWeddingInfo: Content {
             self.venueName = nil
             self.venueAddress = nil
             self.venueDetail = nil
-            self.venuePhone = nil
             self.kakaoMapUrl = nil
             self.naverMapUrl = nil
-            self.googleMapUrl = nil
             self.parkingInfo = nil
             self.transportInfo = nil
             self.ceremonyProgram = nil
@@ -84,10 +78,8 @@ struct FilteredWeddingInfo: Content {
             self.venueName = nil
             self.venueAddress = nil
             self.venueDetail = nil
-            self.venuePhone = nil
             self.kakaoMapUrl = nil
             self.naverMapUrl = nil
-            self.googleMapUrl = nil
             self.parkingInfo = nil
             self.transportInfo = nil
             self.ceremonyProgram = nil
