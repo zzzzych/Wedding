@@ -14,15 +14,15 @@ struct InvitationController: RouteCollection {
     
     /// 라우트 등록 함수 - 이 컨트롤러가 처리할 API 경로들을 정의합니다.
     func boot(routes: RoutesBuilder) throws {
-        let api = routes.grouped("api")
+        // ✅ let api = routes.grouped("api") 줄 삭제
         
         // === 하객용 API (인증 불필요) ===
         // GET /api/invitation/:uniqueCode - 고유 코드로 청첩장 정보 조회
-        api.get("invitation", ":uniqueCode", use: getInvitation)
+        routes.get("invitation", ":uniqueCode", use: getInvitation)
         
         // === 관리자용 API (JWT 인증 필요) ===
         // 여기서는 토큰 인증 미들웨어를 추가해야 하지만, 우선 기능 구현에 집중합니다.
-        let admin = api.grouped("admin")
+        let admin = routes.grouped("admin")
         
         // 그룹 관리 API들
         admin.post("groups", use: createGroup)

@@ -18,8 +18,8 @@ struct WeddingController: RouteCollection {
         weddingRoutes.post(use: create)
         
         // --- [새로 추가: 관리자 전용 라우트] ---
-        let api = routes.grouped("api")
-        let admin = api.grouped("admin")
+        // ✅ let api = routes.grouped("api") 줄 삭제
+        let admin = routes.grouped("admin")
         
         // GET /api/admin/wedding-info - 결혼식 정보 조회 (관리자용)
         admin.get("wedding-info", use: getWeddingInfo)

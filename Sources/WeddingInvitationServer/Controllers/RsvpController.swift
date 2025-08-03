@@ -14,14 +14,14 @@ struct RsvpController: RouteCollection {
     /// 라우트 등록 함수 - 이 컨트롤러가 처리할 API 경로들을 정의합니다
     /// - Parameter routes: 라우트 빌더 객체
     func boot(routes: any RoutesBuilder) throws {
-        let api = routes.grouped("api")
+        // ✅ let api = routes.grouped("api") 줄 삭제
         
         // === 하객용 API (인증 불필요) ===
         // POST /api/invitation/:uniqueCode/rsvp - 참석 여부 응답 제출
-        api.post("invitation", ":uniqueCode", "rsvp", use: submitRsvp)
+        routes.post("invitation", ":uniqueCode", "rsvp", use: submitRsvp)
         
         // === 관리자용 API ===
-        let admin = api.grouped("admin")
+        let admin = routes.grouped("admin")
         
         // 응답 조회 API들
         admin.get("rsvps", use: getAllRsvps)                      // 전체 응답 현황 조회
