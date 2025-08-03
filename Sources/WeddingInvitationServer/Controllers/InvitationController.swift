@@ -68,7 +68,6 @@ struct InvitationController: RouteCollection {
     }
 
     // MARK: - 관리자용 그룹 관리 API 기능
-    
     /// 새로운 초대 그룹 생성 (관리자용)
     /// - Method: `POST`
     /// - Path: `/api/admin/groups`
@@ -79,6 +78,7 @@ struct InvitationController: RouteCollection {
             throw Abort(.badRequest, reason: "유효하지 않은 그룹 타입입니다. \(GroupType.allCases.map { $0.rawValue }) 중 하나여야 합니다.")
         }
 
+        // 중복 그룹명 검사
         let existingGroup = try await InvitationGroup.query(on: req.db)
             .filter(\.$groupName == createRequest.groupName)
             .first()
@@ -87,17 +87,53 @@ struct InvitationController: RouteCollection {
             throw Abort(.conflict, reason: "이미 존재하는 그룹 이름입니다.")
         }
 
-        // InvitationGroup 모델의 생성자에서 그룹 타입별 기본 기능 설정을 자동으로 처리
-        //
+        // 고유 코드 중복 검사 (사용자 정의 코드가 있는 경우)
+        if let customCode = createRequest.uniqueCode {
+            let existingCode = try await InvitationGroup.query(on: req.db)
+                .filter(\.$uniqueCode == customCode)
+                .first()
+            
+            if existingCode != nil {
+                throw Abort(.conflict, reason: "이미 사용 중인 고유 코드입니다.")
+            }
+        }
+
+        // 새 그룹 생성 (InvitationGroup의 생성자가 그룹 타입별 기본 기능 설정을 자동 처리)
         let newGroup = InvitationGroup(
             groupName: createRequest.groupName,
             groupType: createRequest.groupType,
-            greetingMessage: createRequest.greetingMessage
+            greetingMessage: createRequest.greetingMessage,
+            uniqueCode: createRequest.uniqueCode
         )
 
+        // 데이터베이스에 저장
         try await newGroup.save(on: req.db)
         return newGroup
     }
+
+    /// 그룹 삭제 (관리자용)
+    /// - Method: `DELETE`
+    /// - Path: `/api/admin/groups/:groupId`
+    func deleteGroup(req: Request) async throws -> HTTPStatus {
+        guard let groupId = req.parameters.get("groupId", as: UUID.self) else {
+            throw Abort(.badRequest, reason: "유효하지 않은 그룹 ID 형식입니다.")
+        }
+        
+        guard let group = try await InvitationGroup.find(groupId, on: req.db) else {
+            throw Abort(.notFound, reason: "그룹을 찾을 수 없습니다.")
+        }
+        
+        // 해당 그룹의 모든 RSVP 응답도 함께 삭제
+        try await RsvpResponse.query(on: req.db)
+            .filter(\.$group.$id == groupId)
+            .delete()
+        
+        // 그룹 삭제
+        try await group.delete(on: req.db)
+        
+        return .noContent
+    }
+    
     
     /// 전체 그룹 목록 조회 (관리자용)
     /// - Method: `GET`
@@ -175,33 +211,5 @@ struct InvitationController: RouteCollection {
 
         try await group.save(on: req.db)
         return group
-    }
-    
-    /// 그룹 삭제 (관리자용)
-    /// - Method: `DELETE`
-    /// - Path: `/api/admin/groups/:groupId`
-    func deleteGroup(req: Request) async throws -> HTTPStatus {
-        guard let groupId = req.parameters.get("groupId", as: UUID.self) else {
-            throw Abort(.badRequest, reason: "유효하지 않은 그룹 ID 형식입니다.")
-        }
-        
-        guard let group = try await InvitationGroup.find(groupId, on: req.db) else {
-            throw Abort(.notFound, reason: "그룹을 찾을 수 없습니다.")
-        }
-        
-        let responseCount = try await RsvpResponse.query(on: req.db)
-            .filter(\.$group.$id == groupId)
-            .count()
-            
-        if responseCount > 0 {
-            // 자식 테이블(응답)을 먼저 삭제해야 부모 테이블(그룹)을 삭제할 수 있음
-            try await RsvpResponse.query(on: req.db)
-                .filter(\.$group.$id == groupId)
-                .delete()
-        }
-        
-        try await group.delete(on: req.db)
-        
-        return .noContent // 성공적으로 삭제되었음을 의미
     }
 }

@@ -91,7 +91,7 @@ struct WeddingController: RouteCollection {
         
         return existingWeddingInfo
     }
-    
+
     // MARK: - PATCH /api/admin/wedding-info
     /// 결혼식 정보 부분 수정 (관리자용)
     func patchWeddingInfo(req: Request) async throws -> WeddingInfo {
@@ -100,10 +100,10 @@ struct WeddingController: RouteCollection {
             throw Abort(.notFound, reason: "수정할 결혼식 정보를 찾을 수 없습니다.")
         }
         
-        // 2. 요청 데이터 파싱 (부분 수정용)
+        // 2. 요청 데이터 파싱 (부분 업데이트용)
         let patchData = try req.content.decode(WeddingInfoPatchRequest.self)
         
-        // 3. nil이 아닌 필드만 업데이트
+        // 3. 전달된 필드만 선택적으로 업데이트
         if let groomName = patchData.groomName {
             existingWeddingInfo.groomName = groomName
         }

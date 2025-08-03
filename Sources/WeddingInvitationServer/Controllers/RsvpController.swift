@@ -161,11 +161,7 @@ struct RsvpController: RouteCollection {
     }
     
     // MARK: - 관리자용 수정/삭제 API 기능들
-    
     /// 응답 수정 (관리자용)
-    /// 관리자가 잘못 입력된 응답을 수정할 때 사용합니다
-    /// - Parameter req: HTTP 요청 객체 (rsvpId 파라미터와 수정 데이터 포함)
-    /// - Returns: 수정된 응답 데이터
     func updateRsvp(req: Request) async throws -> SimpleRsvpResponse {
         // 1. URL에서 rsvpId 파라미터 추출
         guard let rsvpIdString = req.parameters.get("rsvpId"),
@@ -182,35 +178,19 @@ struct RsvpController: RouteCollection {
         let updateRequest = try req.content.decode(UpdateRsvpRequest.self)
         try updateRequest.validate()
         
-        // 4. 동일한 그룹 내에서 이름 중복 검사 (자신 제외)
-        // 같은 그룹에서 동일한 이름의 다른 응답자가 있는지 확인합니다
-        let trimmedName = updateRequest.responderName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let existingResponse = try await RsvpResponse.query(on: req.db)
-            .filter(\.$group.$id == rsvp.$group.id)
-            .filter(\.$responderName == trimmedName)
-            .filter(\.$id != rsvpId) // 자신은 제외
-            .first()
-        
-        if existingResponse != nil {
-            throw Abort(.conflict, reason: "같은 그룹에 이미 동일한 이름의 응답자가 있습니다.")
-        }
-        
-        // 5. 응답 정보 업데이트
-        rsvp.responderName = trimmedName
+        // 4. 응답 데이터 업데이트
+        rsvp.responderName = updateRequest.responderName.trimmingCharacters(in: .whitespacesAndNewlines)
         rsvp.isAttending = updateRequest.isAttending
         rsvp.adultCount = updateRequest.adultCount
         rsvp.childrenCount = updateRequest.childrenCount
         
-        // 6. 데이터베이스에 저장
+        // 5. 데이터베이스에 저장
         try await rsvp.save(on: req.db)
         
         return SimpleRsvpResponse.from(rsvp)
     }
-    
+
     /// 응답 삭제 (관리자용)
-    /// 관리자가 잘못된 응답이나 테스트 응답을 삭제할 때 사용합니다
-    /// - Parameter req: HTTP 요청 객체 (rsvpId 파라미터 포함)
-    /// - Returns: HTTP 상태 코드 (204 No Content)
     func deleteRsvp(req: Request) async throws -> HTTPStatus {
         // 1. URL에서 rsvpId 파라미터 추출
         guard let rsvpIdString = req.parameters.get("rsvpId"),
@@ -223,83 +203,64 @@ struct RsvpController: RouteCollection {
             throw Abort(.notFound, reason: "응답을 찾을 수 없습니다.")
         }
         
-        // 3. 응답 삭제
+        // 3. 데이터베이스에서 삭제
         try await rsvp.delete(on: req.db)
         
-        return .noContent // 204 No Content - 성공적으로 삭제되었음을 나타냄
+        return .noContent
     }
-    
-    // MARK: - 관리자용 대량 작업 API 기능들
-    
+
     /// 여러 응답 일괄 삭제 (관리자용)
-    /// 관리자가 여러 응답을 한 번에 삭제할 때 사용합니다
-    /// - Parameter req: HTTP 요청 객체 (삭제할 ID 목록 포함)
-    /// - Returns: 일괄 삭제 결과 (성공/실패 개수)
-    func bulkDeleteRsvps(req: Request) async throws -> BulkDeleteResult {
-        // 1. 요청 데이터 파싱 및 유효성 검사
+    func bulkDeleteRsvps(req: Request) async throws -> HTTPStatus {
+        // 1. 요청 데이터 파싱
         let deleteRequest = try req.content.decode(BulkDeleteRequest.self)
-        try deleteRequest.validate()
         
-        // 2. 유효한 UUID로 변환
-        // 문자열 형태의 ID들을 실제 UUID 객체로 변환합니다
-        let validIds = deleteRequest.rsvpIds.compactMap { UUID(uuidString: $0) }
+        // 2. UUID 배열 검증
+        let rsvpIds = try deleteRequest.ids.map { idString in
+            guard let uuid = UUID(uuidString: idString) else {
+                throw Abort(.badRequest, reason: "유효하지 않은 ID 형식입니다: \(idString)")
+            }
+            return uuid
+        }
         
-        // 3. 해당 ID들의 응답 조회
-        // ~~ 연산자는 SQL의 IN 조건과 같습니다 (여러 값 중 하나와 일치)
-        let rsvpsToDelete = try await RsvpResponse.query(on: req.db)
-            .filter(\.$id ~~ validIds) // IN 조건으로 여러 ID 조회
-            .all()
-        
-        let foundCount = rsvpsToDelete.count
-        
-        // 4. 일괄 삭제 실행
+        // 3. 해당 응답들을 모두 삭제
         try await RsvpResponse.query(on: req.db)
-            .filter(\.$id ~~ validIds)
+            .filter(\.$id ~~ rsvpIds)
             .delete()
         
-        return BulkDeleteResult(
-            requestedCount: deleteRequest.rsvpIds.count, // 요청된 삭제 개수
-            deletedCount: foundCount,                    // 실제 삭제된 개수
-            notFoundCount: deleteRequest.rsvpIds.count - foundCount // 찾지 못한 개수
-        )
+        return .noContent
     }
-    
+
     /// 응답 데이터 CSV 내보내기 (관리자용)
-    /// 관리자가 모든 응답 데이터를 엑셀에서 볼 수 있도록 CSV 파일로 내보냅니다
-    /// - Parameter req: HTTP 요청 객체
-    /// - Returns: CSV 파일 응답
     func exportRsvps(req: Request) async throws -> Response {
         // 1. 모든 응답 조회 (그룹 정보 포함)
         let allRsvps = try await RsvpResponse.query(on: req.db)
-            .with(\.$group) // 그룹 정보도 함께 로드
-            .sort(\.$createdAt) // 응답 시간순으로 정렬
+            .with(\.$group)
+            .sort(\.$createdAt, .ascending)
             .all()
         
         // 2. CSV 헤더 생성
-        // 엑셀에서 열어볼 때 각 열의 의미를 알 수 있도록 헤더를 추가합니다
-        var csvContent = "응답자명,참석여부,성인인원,자녀인원,총인원,그룹명,그룹타입,응답시간\n"
+        var csvContent = "응답자 이름,참석 여부,성인 인원,자녀 인원,총 인원,그룹명,그룹 타입,응답 시간\n"
         
         // 3. 각 응답을 CSV 행으로 변환
         for rsvp in allRsvps {
             let attendingText = rsvp.isAttending ? "참석" : "불참"
             let totalCount = rsvp.adultCount + rsvp.childrenCount
-            let submittedTime = rsvp.createdAt?.formatted() ?? "알 수 없음"
+            let groupName = rsvp.group.groupName
+            let groupType = rsvp.group.groupType
             
-            // CSV 형식에 맞게 데이터 정리 (쉼표가 포함된 값은 따옴표로 감싸기)
-            // 이렇게 하면 응답자 이름에 쉼표가 있어도 CSV가 깨지지 않습니다
-            let row = """
-            "\(rsvp.responderName)","\(attendingText)",\(rsvp.adultCount),\(rsvp.childrenCount),\(totalCount),"\(rsvp.group.groupName)","\(rsvp.group.groupType)","\(submittedTime)"
-            """
-            csvContent += row + "\n"
+            // 날짜 포맷팅
+            let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+            let createdAtString = formatter.string(from: rsvp.createdAt ?? Date())
+            
+            csvContent += "\(rsvp.responderName),\(attendingText),\(rsvp.adultCount),\(rsvp.childrenCount),\(totalCount),\(groupName),\(groupType),\(createdAtString)\n"
         }
         
         // 4. CSV 응답 생성
-        let response = Response(status: .ok, body: .init(string: csvContent))
-        
-        // 5. HTTP 헤더 설정 (파일 다운로드)
-        // 브라우저가 이 응답을 파일로 다운로드하도록 헤더를 설정합니다
-        response.headers.contentType = .init(type: "text", subType: "csv", parameters: ["charset": "utf-8"])
-        response.headers.contentDisposition = .init(.attachment, filename: "wedding_rsvps_\(Date().formattedForFilename()).csv")
+        let response = Response()
+        response.headers.contentType = .init(type: "text", subType: "csv")
+        response.headers.add(name: .contentDisposition, value: "attachment; filename=\"rsvp_responses.csv\"")
+        response.body = .init(string: csvContent)
         
         return response
     }

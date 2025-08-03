@@ -193,6 +193,8 @@ struct CreateGroupRequest: Content {
     let groupType: String
     /// 그룹별 인사말
     let greetingMessage: String
+    /// 사용자 정의 고유 코드 (선택사항) - 🆕 추가
+    let uniqueCode: String?
 }
 
 
@@ -218,4 +220,131 @@ struct UpdateGroupRequest: Content {
     let showAccountInfo: Bool?
     /// 포토 갤러리 표시 여부 (옵셔널)
     let showPhotoGallery: Bool?
+}
+
+// MARK: - 요청 모델들 추가
+
+/// 그룹 생성 요청 모델
+struct CreateGroupRequest: Content {
+    /// 그룹 이름
+    let groupName: String
+    
+    /// 그룹 타입
+    let groupType: String
+    
+    /// 인사말 메시지
+    let greetingMessage: String
+    
+    /// 사용자 정의 고유 코드 (선택사항)
+    let uniqueCode: String?
+}
+
+/// 그룹 수정 요청 모델
+struct UpdateGroupRequest: Content {
+    /// 수정할 그룹 이름 (선택사항)
+    let groupName: String?
+    
+    /// 수정할 인사말 메시지 (선택사항)
+    let greetingMessage: String?
+    
+    /// 수정할 고유 코드 (선택사항)
+    let uniqueCode: String?
+    
+    // 기능 설정 필드들
+    let showVenueInfo: Bool?
+    let showShareButton: Bool?
+    let showCeremonyProgram: Bool?
+    let showRsvpForm: Bool?
+    let showAccountInfo: Bool?
+    let showPhotoGallery: Bool?
+}
+
+/// 대량 삭제 요청 모델
+struct BulkDeleteRequest: Content {
+    /// 삭제할 항목들의 ID 목록
+    let ids: [String]
+}
+
+/// 결혼식 정보 수정 요청 모델
+struct WeddingInfoUpdateRequest: Content {
+    let groomName: String
+    let brideName: String
+    let weddingDate: Date
+    let venueName: String
+    let venueAddress: String
+    let venueDetail: String?
+    let venuePhone: String?
+    let kakaoMapUrl: String?
+    let naverMapUrl: String?
+    let googleMapUrl: String?
+    let parkingInfo: String?
+    let transportInfo: String?
+    let greetingMessage: String
+    let ceremonyProgram: String?
+    let accountInfo: [String]
+}
+
+/// 결혼식 정보 부분 수정 요청 모델
+struct WeddingInfoPatchRequest: Content {
+    let groomName: String?
+    let brideName: String?
+    let weddingDate: Date?
+    let venueName: String?
+    let venueAddress: String?
+    let venueDetail: String?
+    let venuePhone: String?
+    let kakaoMapUrl: String?
+    let naverMapUrl: String?
+    let googleMapUrl: String?
+    let parkingInfo: String?
+    let transportInfo: String?
+    let greetingMessage: String?
+    let ceremonyProgram: String?
+    let accountInfo: [String]?
+}
+
+// MARK: - 추가 요청 모델들
+
+/// 대량 삭제 요청 모델
+struct BulkDeleteRequest: Content {
+    /// 삭제할 항목들의 ID 목록
+    let ids: [String]
+}
+
+/// 결혼식 정보 수정 요청 모델
+struct WeddingInfoUpdateRequest: Content {
+    let groomName: String
+    let brideName: String
+    let weddingDate: Date
+    let venueName: String
+    let venueAddress: String
+    let venueDetail: String?
+    let venuePhone: String?
+    let kakaoMapUrl: String?
+    let naverMapUrl: String?
+    let googleMapUrl: String?
+    let parkingInfo: String?
+    let transportInfo: String?
+    let greetingMessage: String
+    let ceremonyProgram: String?
+    let accountInfo: [String]
+}
+
+/// 결혼식 정보 부분 수정 요청 모델
+struct WeddingInfoPatchRequest: Content {
+    let groomName: String?
+    let brideName: String?
+    let weddingDate: Date?
+    let venueName: String?
+    let venueAddress: String?
+    let venueDetail: String?
+    let venuePhone: String?
+    let kakaoMapUrl: String?
+    let naverMapUrl: String?
+    let googleMapUrl: String?
+    let parkingInfo: String?
+    let transportInfo: String?
+    let greetingMessage: String?
+    let ceremonyProgram: String?
+    let accountInfo: [String]?
 }
