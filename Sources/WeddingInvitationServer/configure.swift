@@ -29,13 +29,12 @@ public func configure(_ app: Application) async throws {
     // CORS 미들웨어를 앱에 추가
     app.middleware.use(corsMiddleware, at: .beginning)
     
-    // 🔄 마이그레이션 등록 - 새로 생성한 마이그레이션 추가
-    // 마이그레이션 추가 - 순서가 중요합니다!
-    // configure.swift 파일에서 마이그레이션 부분
-    app.migrations.add(CreateWeddingSchema())        // ✅ 메인 테이블들
-    app.migrations.add(CreateInitialAdminUser())     // ✅ 관리자 계정 생성
-//    app.migrations.add(AddFeatureSettingsToInvitationGroup())
-
+    // 🔄 마이그레이션 등록 - 순서대로 실행됩니다
+    app.migrations.add(CreateWeddingSchema())                    // 1. 메인 테이블들 생성
+    app.migrations.add(CreateInitialAdminUser())                 // 2. 관리자 계정 생성
+    app.migrations.add(AddRoleToAdminUser())                     // 3. role 컬럼 추가
+    app.migrations.add(UpdateExistingAdminRole())                // 4. 기존 관리자에 role 설정
+    app.migrations.add(AddFeatureSettingsToInvitationGroup())   // 5. 기능 설정 필드들 추가
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()

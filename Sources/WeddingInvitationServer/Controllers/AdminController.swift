@@ -19,6 +19,13 @@ struct AdminController: RouteCollection {
         
         // POST /api/admin/login - 관리자 로그인
         admin.post("login", use: login)
+        
+        // POST /api/admin/create-admin - 새 관리자 생성
+        // JWT 보호된 라우트 그룹 생성
+        let protected = admin.grouped(AdminJWTAuthenticator())
+        protected.post("create-admin", use: createAdmin)
+        
+        protected.get("list", use: getAdminList)
     }
     
     // MARK: - POST /api/admin/login
@@ -75,6 +82,102 @@ struct AdminController: RouteCollection {
             token: token,
             expiresAt: expirationTime,
             username: adminUser.username
+        )
+    }
+    
+    // Sources/WeddingInvitationServer/Controllers/AdminController.swift 파일에 추가할 코드
+
+    // MARK: - POST /api/admin/create-admin
+    /// 새 관리자 계정 생성 (기존 관리자만 가능)
+    func createAdmin(req: Request) async throws -> AdminCreateResponse {
+        // 🔐 JWT 토큰 검증 (기존 관리자만 새 관리자 생성 가능)
+        let payload = try req.auth.require(AdminJWTPayload.self)
+        print("🔐 관리자 생성 요청 - 인증된 사용자: \(payload.username)")
+        
+        // 1. 요청 데이터 파싱
+        let createRequest = try req.content.decode(CreateAdminRequest.self)
+        print("📥 생성할 관리자 정보: 사용자명='\(createRequest.username)', 역할='\(createRequest.role)'")
+        
+        // 2. 유효성 검사 실행
+        do {
+            try createRequest.validate()
+            print("✅ 유효성 검사 통과")
+        } catch let error as AbortError {
+            print("❌ 유효성 검사 실패: \(error.reason)")
+            throw error
+        }
+        
+        // 3. 중복 사용자명 확인
+        let existingUser = try await AdminUser.query(on: req.db)
+            .filter(\.$username == createRequest.username.trimmingCharacters(in: .whitespacesAndNewlines))
+            .first()
+        
+        if existingUser != nil {
+            print("❌ 중복된 사용자명: '\(createRequest.username)'")
+            throw Abort(.conflict, reason: "이미 존재하는 사용자명입니다.")
+        }
+        
+        // 4. 새 관리자 계정 생성
+        do {
+            let newAdmin = try AdminUser(
+                username: createRequest.username.trimmingCharacters(in: .whitespacesAndNewlines),
+                password: createRequest.password,
+                role: createRequest.role
+            )
+            
+            // 5. 데이터베이스에 저장
+            try await newAdmin.save(on: req.db)
+            print("✅ 새 관리자 계정 생성 완료: '\(newAdmin.username)', ID: \(newAdmin.id?.uuidString ?? "N/A")")
+            
+            // 6. 응답 반환 (비밀번호는 제외)
+            return AdminCreateResponse(
+                id: newAdmin.id?.uuidString ?? "",
+                username: newAdmin.username,
+                role: newAdmin.role,
+                createdAt: newAdmin.createdAt ?? Date(),
+                message: "관리자 계정이 성공적으로 생성되었습니다."
+            )
+            
+        } catch let error as AbortError {
+            // AbortError는 그대로 전달
+            throw error
+        } catch {
+            // 기타 에러 처리
+            print("❌ 관리자 생성 중 오류 발생: \(error)")
+            throw Abort(.internalServerError, reason: "관리자 계정 생성 중 오류가 발생했습니다.")
+        }
+    }
+    
+    // AdminController.swift에 추가할 메서드
+
+    // MARK: - GET /api/admin/list
+    /// 관리자 목록 조회 (기존 관리자만 가능)
+    func getAdminList(req: Request) async throws -> AdminListResponse {
+        // 🔐 JWT 토큰 검증
+        let payload = try req.auth.require(AdminJWTPayload.self)
+        print("🔍 관리자 목록 조회 요청 - 인증된 사용자: \(payload.username)")
+        
+        // 모든 관리자 조회 (비밀번호 제외)
+        let adminUsers = try await AdminUser.query(on: req.db)
+            .sort(\.$createdAt, .descending)
+            .all()
+        
+        // AdminInfo 모델로 변환
+        let adminInfos = adminUsers.map { admin in
+            AdminInfo(
+                id: admin.id?.uuidString ?? "",
+                username: admin.username,
+                role: admin.role,
+                createdAt: admin.createdAt ?? Date(),
+                lastLoginAt: nil // 추후 구현 시 업데이트
+            )
+        }
+        
+        print("✅ 관리자 목록 조회 완료: 총 \(adminInfos.count)명")
+        
+        return AdminListResponse(
+            admins: adminInfos,
+            totalCount: adminInfos.count
         )
     }
 }
