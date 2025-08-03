@@ -13,7 +13,9 @@
 struct AdminController: RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
-        let admin = routes.grouped("api", "admin")
+        // ✅ 수정 전: let admin = routes.grouped("api", "admin")
+        // ✅ 수정 후: routes는 이미 /api 그룹이므로 "admin"만 추가
+        let admin = routes.grouped("admin")
         
         // POST /api/admin/login - 관리자 로그인
         admin.post("login", use: login)
