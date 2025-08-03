@@ -116,7 +116,12 @@ func routes(_ app: Application) throws {
     
     // ✅ 핵심 수정: API 그룹 생성 (/api/...)
     let api = app.grouped("api")
-    
+
+    // ✅ 추가: API 그룹 기본 라우트
+    api.get { req async in
+        return ["message": "Wedding Invitation API is running! 💍", "version": "1.0"]
+    }
+
     // ✅ 모든 컨트롤러를 /api 그룹 하위에 등록
     try api.register(collection: InvitationController())
     try api.register(collection: AdminController())
