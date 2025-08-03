@@ -26,7 +26,7 @@ struct SimpleRsvpResponse: Content {
     let childrenCount: Int
     /// 응답 제출 시간
     let submittedAt: Date?
-    /// 응답 수정 시간 (옵셀날)
+    /// 응답 수정 시간 (옵셔널)
     let updatedAt: Date?
     
     /// 총 참석 인원 수 (계산된 값)
@@ -117,6 +117,7 @@ struct RsvpSummary: Content {
 }
 
 // MARK: - 그룹 관련 공통 모델들
+
 /// 통계 정보가 포함된 그룹 데이터
 struct GroupWithStats: Content {
     /// 그룹 고유 ID
@@ -134,7 +135,7 @@ struct GroupWithStats: Content {
     /// 참석 응답 수 (해당 그룹에서 참석한다고 응답한 사람 수)
     let attendingResponses: Int
     
-    // 🆕 기능 설정 필드들 추가
+    // 기능 설정 필드들
     /// 오시는 길 정보 표시 여부
     let showVenueInfo: Bool?
     /// 공유 버튼 표시 여부
@@ -182,7 +183,7 @@ struct GroupDetailResponse: Content {
     let statistics: GroupStatistics
 }
 
-// MARK: - 요청 데이터 모델들
+// MARK: - 요청 데이터 모델들 (통합 정리)
 
 /// 그룹 생성 요청 데이터
 /// 관리자가 새로운 초대 그룹을 만들 때 사용하는 요청 구조체입니다
@@ -193,10 +194,9 @@ struct CreateGroupRequest: Content {
     let groupType: String
     /// 그룹별 인사말
     let greetingMessage: String
-    /// 사용자 정의 고유 코드 (선택사항) - 🆕 추가
+    /// 사용자 정의 고유 코드 (선택사항)
     let uniqueCode: String?
 }
-
 
 /// 그룹 수정 요청 데이터 (부분 업데이트용)
 struct UpdateGroupRequest: Content {
@@ -207,7 +207,7 @@ struct UpdateGroupRequest: Content {
     /// 고유 URL 코드 (옵셔널)
     let uniqueCode: String?
     
-    // 🆕 기능 설정 필드들 추가
+    // 기능 설정 필드들
     /// 오시는 길 정보 표시 여부 (옵셔널)
     let showVenueInfo: Bool?
     /// 공유 버튼 표시 여부 (옵셔널)
@@ -221,89 +221,6 @@ struct UpdateGroupRequest: Content {
     /// 포토 갤러리 표시 여부 (옵셔널)
     let showPhotoGallery: Bool?
 }
-
-// MARK: - 요청 모델들 추가
-
-/// 그룹 생성 요청 모델
-struct CreateGroupRequest: Content {
-    /// 그룹 이름
-    let groupName: String
-    
-    /// 그룹 타입
-    let groupType: String
-    
-    /// 인사말 메시지
-    let greetingMessage: String
-    
-    /// 사용자 정의 고유 코드 (선택사항)
-    let uniqueCode: String?
-}
-
-/// 그룹 수정 요청 모델
-struct UpdateGroupRequest: Content {
-    /// 수정할 그룹 이름 (선택사항)
-    let groupName: String?
-    
-    /// 수정할 인사말 메시지 (선택사항)
-    let greetingMessage: String?
-    
-    /// 수정할 고유 코드 (선택사항)
-    let uniqueCode: String?
-    
-    // 기능 설정 필드들
-    let showVenueInfo: Bool?
-    let showShareButton: Bool?
-    let showCeremonyProgram: Bool?
-    let showRsvpForm: Bool?
-    let showAccountInfo: Bool?
-    let showPhotoGallery: Bool?
-}
-
-/// 대량 삭제 요청 모델
-struct BulkDeleteRequest: Content {
-    /// 삭제할 항목들의 ID 목록
-    let ids: [String]
-}
-
-/// 결혼식 정보 수정 요청 모델
-struct WeddingInfoUpdateRequest: Content {
-    let groomName: String
-    let brideName: String
-    let weddingDate: Date
-    let venueName: String
-    let venueAddress: String
-    let venueDetail: String?
-    let venuePhone: String?
-    let kakaoMapUrl: String?
-    let naverMapUrl: String?
-    let googleMapUrl: String?
-    let parkingInfo: String?
-    let transportInfo: String?
-    let greetingMessage: String
-    let ceremonyProgram: String?
-    let accountInfo: [String]
-}
-
-/// 결혼식 정보 부분 수정 요청 모델
-struct WeddingInfoPatchRequest: Content {
-    let groomName: String?
-    let brideName: String?
-    let weddingDate: Date?
-    let venueName: String?
-    let venueAddress: String?
-    let venueDetail: String?
-    let venuePhone: String?
-    let kakaoMapUrl: String?
-    let naverMapUrl: String?
-    let googleMapUrl: String?
-    let parkingInfo: String?
-    let transportInfo: String?
-    let greetingMessage: String?
-    let ceremonyProgram: String?
-    let accountInfo: [String]?
-}
-
-// MARK: - 추가 요청 모델들
 
 /// 대량 삭제 요청 모델
 struct BulkDeleteRequest: Content {

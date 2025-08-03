@@ -69,13 +69,11 @@ struct InvitationController: RouteCollection {
 
     // MARK: - 관리자용 그룹 관리 API 기능
     /// 새로운 초대 그룹 생성 (관리자용)
-    /// - Method: `POST`
-    /// - Path: `/api/admin/groups`
     func createGroup(req: Request) async throws -> InvitationGroup {
         let createRequest = try req.content.decode(CreateGroupRequest.self)
 
         guard GroupType(rawValue: createRequest.groupType) != nil else {
-            throw Abort(.badRequest, reason: "유효하지 않은 그룹 타입입니다. \(GroupType.allCases.map { $0.rawValue }) 중 하나여야 합니다.")
+            throw Abort(.badRequest, reason: "유효하지 않은 그룹 타입입니다.")
         }
 
         // 중복 그룹명 검사
@@ -87,26 +85,14 @@ struct InvitationController: RouteCollection {
             throw Abort(.conflict, reason: "이미 존재하는 그룹 이름입니다.")
         }
 
-        // 고유 코드 중복 검사 (사용자 정의 코드가 있는 경우)
-        if let customCode = createRequest.uniqueCode {
-            let existingCode = try await InvitationGroup.query(on: req.db)
-                .filter(\.$uniqueCode == customCode)
-                .first()
-            
-            if existingCode != nil {
-                throw Abort(.conflict, reason: "이미 사용 중인 고유 코드입니다.")
-            }
-        }
-
-        // 새 그룹 생성 (InvitationGroup의 생성자가 그룹 타입별 기본 기능 설정을 자동 처리)
+        // 🔧 수정된 부분: InvitationGroup 생성자 호출 방식 수정
         let newGroup = InvitationGroup(
             groupName: createRequest.groupName,
             groupType: createRequest.groupType,
             greetingMessage: createRequest.greetingMessage,
-            uniqueCode: createRequest.uniqueCode
+            uniqueCode: createRequest.uniqueCode ?? InvitationGroup.generateSecureCode()
         )
 
-        // 데이터베이스에 저장
         try await newGroup.save(on: req.db)
         return newGroup
     }

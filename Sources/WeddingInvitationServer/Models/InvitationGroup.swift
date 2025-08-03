@@ -82,6 +82,26 @@ final class InvitationGroup: Model, Content, @unchecked Sendable {
         self.showAccountInfo = defaultFeatures.showAccountInfo
         self.showPhotoGallery = defaultFeatures.showPhotoGallery
     }
+    
+    // 🆕 uniqueCode를 받는 새로운 생성자 추가
+    init(groupName: String, groupType: String, greetingMessage: String, uniqueCode: String?) {
+        self.id = nil
+        self.groupName = groupName
+        self.groupType = groupType
+        self.greetingMessage = greetingMessage
+        
+        // uniqueCode가 제공되면 사용하고, 아니면 자동 생성
+        self.uniqueCode = uniqueCode ?? Self.generateSecureCode()
+        
+        // 그룹 타입별 기본 기능 설정
+        let defaultFeatures = getDefaultFeatures(for: groupType)
+        self.showVenueInfo = defaultFeatures.showVenueInfo
+        self.showShareButton = defaultFeatures.showShareButton
+        self.showCeremonyProgram = defaultFeatures.showCeremonyProgram
+        self.showRsvpForm = defaultFeatures.showRsvpForm
+        self.showAccountInfo = defaultFeatures.showAccountInfo
+        self.showPhotoGallery = defaultFeatures.showPhotoGallery
+    }
 
     // greetingMessage를 받는 생성자도 수정
     init(groupName: String, groupType: String, greetingMessage: String) {
