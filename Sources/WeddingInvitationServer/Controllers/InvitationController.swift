@@ -71,6 +71,7 @@ struct InvitationController: RouteCollection {
         req.logger.info("청첩장 정보 조회: 그룹 '\(group.groupName)' (코드: \(uniqueCode))")
         
         // 5. 응답 생성
+        // 5. 응답 데이터 구성 및 반환
         return InvitationResponse.create(from: defaultWeddingInfo, and: group)
     }
 
