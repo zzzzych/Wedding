@@ -104,7 +104,7 @@ struct RsvpController: RouteCollection {
     /// 모든 참석 응답 현황 조회 (관리자용)
     /// 관리자가 전체 응답 현황을 한눈에 볼 수 있는 요약 정보를 제공합니다
     /// - Parameter req: HTTP 요청 객체
-    /// - Returns: 전체 응답 요약 정보 (통계 + 개별 응답 목록)
+    /// - Returns: 전체 응답 요약 정보 (통계만 포함)
     func getAllRsvps(req: Request) async throws -> RsvpSummary {
         // 1. 모든 참석 응답 조회 (그룹 정보 포함)
         // .with(\.$group)를 사용해 연관된 그룹 정보도 함께 로드합니다
@@ -122,18 +122,14 @@ struct RsvpController: RouteCollection {
         // 참석하는 사람들의 자녀 인원 수 합계
         let totalChildren = attendingResponses.reduce(0) { $0 + $1.childrenCount }
         
-        // 3. 응답 데이터 변환
-        // RsvpResponse 모델을 API 응답용 구조체로 변환합니다
-        let responseData = allRsvps.map { SimpleRsvpWithGroupInfo.from($0) }
-        
+        // 3. 통계 정보만 반환
         return RsvpSummary(
             totalResponses: totalResponses,
-            attendingCount: attendingCount,
-            notAttendingCount: totalResponses - attendingCount,
-            totalAdults: totalAdults,
-            totalChildren: totalChildren,
-            totalPeople: totalAdults + totalChildren,
-            responses: responseData
+            attendingResponses: attendingCount,
+            notAttendingResponses: totalResponses - attendingCount,
+            totalAttendingCount: totalAdults + totalChildren,
+            totalAdultCount: totalAdults,
+            totalChildrenCount: totalChildren
         )
     }
     
@@ -161,7 +157,11 @@ struct RsvpController: RouteCollection {
     }
     
     // MARK: - 관리자용 수정/삭제 API 기능들
+    
     /// 응답 수정 (관리자용)
+    /// 관리자가 특정 응답의 내용을 수정할 때 사용합니다
+    /// - Parameter req: HTTP 요청 객체 (rsvpId 파라미터와 수정 데이터 포함)
+    /// - Returns: 수정된 응답 데이터
     func updateRsvp(req: Request) async throws -> SimpleRsvpResponse {
         // 1. URL에서 rsvpId 파라미터 추출
         guard let rsvpIdString = req.parameters.get("rsvpId"),
@@ -191,6 +191,9 @@ struct RsvpController: RouteCollection {
     }
 
     /// 응답 삭제 (관리자용)
+    /// 관리자가 특정 응답을 삭제할 때 사용합니다
+    /// - Parameter req: HTTP 요청 객체 (rsvpId 파라미터 포함)
+    /// - Returns: HTTP 상태 코드 (삭제 완료 시 204 No Content)
     func deleteRsvp(req: Request) async throws -> HTTPStatus {
         // 1. URL에서 rsvpId 파라미터 추출
         guard let rsvpIdString = req.parameters.get("rsvpId"),
@@ -210,12 +213,15 @@ struct RsvpController: RouteCollection {
     }
 
     /// 여러 응답 일괄 삭제 (관리자용)
+    /// 관리자가 여러 응답을 한 번에 삭제할 때 사용합니다
+    /// - Parameter req: HTTP 요청 객체 (삭제할 응답 ID 목록 포함)
+    /// - Returns: HTTP 상태 코드 (삭제 완료 시 204 No Content)
     func bulkDeleteRsvps(req: Request) async throws -> HTTPStatus {
         // 1. 요청 데이터 파싱
         let deleteRequest = try req.content.decode(BulkDeleteRequest.self)
         
         // 2. UUID 배열 검증
-        let rsvpIds = try deleteRequest.ids.map { idString in
+        let rsvpIds = try deleteRequest.rsvpIds.map { idString in
             guard let uuid = UUID(uuidString: idString) else {
                 throw Abort(.badRequest, reason: "유효하지 않은 ID 형식입니다: \(idString)")
             }
@@ -231,6 +237,9 @@ struct RsvpController: RouteCollection {
     }
 
     /// 응답 데이터 CSV 내보내기 (관리자용)
+    /// 관리자가 모든 응답 데이터를 CSV 파일로 다운로드할 때 사용합니다
+    /// - Parameter req: HTTP 요청 객체
+    /// - Returns: CSV 형식의 응답 데이터 파일
     func exportRsvps(req: Request) async throws -> Response {
         // 1. 모든 응답 조회 (그룹 정보 포함)
         let allRsvps = try await RsvpResponse.query(on: req.db)

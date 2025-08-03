@@ -96,24 +96,15 @@ struct RsvpSummary: Content {
     /// 총 응답 수 (참석 + 불참)
     let totalResponses: Int
     /// 참석 응답 수
-    let attendingCount: Int
+    let attendingResponses: Int
     /// 불참 응답 수
-    let notAttendingCount: Int
-    /// 총 성인 참석 인원 (참석자만 카운트)
-    let totalAdults: Int
-    /// 총 자녀 참석 인원 (참석자만 카운트)
-    let totalChildren: Int
-    /// 총 참석 인원 (성인 + 자녀, 참석자만 카운트)
-    let totalPeople: Int
-    /// 개별 응답 목록 (그룹 정보 포함)
-    let responses: [SimpleRsvpWithGroupInfo]
-    
-    /// 참석률 계산 (백분율)
-    /// 전체 응답 중 참석 응답의 비율을 계산합니다
-    var attendanceRate: Double {
-        guard totalResponses > 0 else { return 0.0 }
-        return Double(attendingCount) / Double(totalResponses) * 100.0
-    }
+    let notAttendingResponses: Int
+    /// 총 참석 예정 인원 (성인 + 자녀)
+    let totalAttendingCount: Int
+    /// 참석 예정 성인 인원
+    let totalAdultCount: Int
+    /// 참석 예정 자녀 인원
+    let totalChildrenCount: Int
 }
 
 // MARK: - 그룹 관련 공통 모델들
@@ -220,48 +211,4 @@ struct UpdateGroupRequest: Content {
     let showAccountInfo: Bool?
     /// 포토 갤러리 표시 여부 (옵셔널)
     let showPhotoGallery: Bool?
-}
-
-/// 대량 삭제 요청 모델
-struct BulkDeleteRequest: Content {
-    /// 삭제할 항목들의 ID 목록
-    let ids: [String]
-}
-
-/// 결혼식 정보 수정 요청 모델
-struct WeddingInfoUpdateRequest: Content {
-    let groomName: String
-    let brideName: String
-    let weddingDate: Date
-    let venueName: String
-    let venueAddress: String
-    let venueDetail: String?
-    let venuePhone: String?
-    let kakaoMapUrl: String?
-    let naverMapUrl: String?
-    let googleMapUrl: String?
-    let parkingInfo: String?
-    let transportInfo: String?
-    let greetingMessage: String
-    let ceremonyProgram: String?
-    let accountInfo: [String]
-}
-
-/// 결혼식 정보 부분 수정 요청 모델
-struct WeddingInfoPatchRequest: Content {
-    let groomName: String?
-    let brideName: String?
-    let weddingDate: Date?
-    let venueName: String?
-    let venueAddress: String?
-    let venueDetail: String?
-    let venuePhone: String?
-    let kakaoMapUrl: String?
-    let naverMapUrl: String?
-    let googleMapUrl: String?
-    let parkingInfo: String?
-    let transportInfo: String?
-    let greetingMessage: String?
-    let ceremonyProgram: String?
-    let accountInfo: [String]?
 }
