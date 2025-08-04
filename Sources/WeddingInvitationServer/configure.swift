@@ -49,7 +49,7 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(AddRoleToAdminUser())                     // 3. role 컬럼 추가
     app.migrations.add(AddTimestampsToAdminUser())               // 4. AdminUser 타임스탬프 컬럼 추가 (먼저 실행)
     app.migrations.add(UpdateExistingAdminRole())                // 5. 기존 관리자에 role 설정 (나중에 실행)
-    app.migrations.add(AddFeatureSettingsToInvitationGroup())   // 6. 기능 설정 필드들 추가
+    // AddFeatureSettingsToInvitationGroup() 제거 - CreateWeddingSchema에서 이미 생성됨
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()
