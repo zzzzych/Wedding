@@ -1,0 +1,22 @@
+{
+    "configurations": [
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:WeddingInvitationServer}",
+            "name": "Debug WeddingInvitationServer",
+            "program": "${workspaceFolder:WeddingInvitationServer}/.build/debug/WeddingInvitationServer",
+            "preLaunchTask": "swift: Build Debug WeddingInvitationServer"
+        },
+        {
+            "type": "swift",
+            "request": "launch",
+            "args": [],
+            "cwd": "${workspaceFolder:WeddingInvitationServer}",
+            "name": "Release WeddingInvitationServer",
+            "program": "${workspaceFolder:WeddingInvitationServer}/.build/release/WeddingInvitationServer",
+            "preLaunchTask": "swift: Build Release WeddingInvitationServer"
+        }
+    ]
+}
