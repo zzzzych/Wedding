@@ -20,7 +20,7 @@ public func configure(_ app: Application) async throws {
     
     // 🌐 CORS 설정 - React 앱에서 API 호출 허용
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .all,
+        allowedOrigin: .custom("https://leelee.kr"),  // ✅ 구체적인 도메인 지정
         allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .HEAD, .PATCH],
         allowedHeaders: [
             .accept,
@@ -34,8 +34,10 @@ public func configure(_ app: Application) async throws {
             .accessControlAllowMethods,
             .cacheControl,
             .ifModifiedSince
-        ]
+        ],
+        allowCredentials: true  // ✅ 인증 정보 허용 추가
     )
+    
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
     
     // CORS 미들웨어를 앱에 추가
@@ -46,7 +48,8 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(CreateInitialAdminUser())                 // 2. 관리자 계정 생성
     app.migrations.add(AddRoleToAdminUser())                     // 3. role 컬럼 추가
     app.migrations.add(UpdateExistingAdminRole())                // 4. 기존 관리자에 role 설정
-    app.migrations.add(AddFeatureSettingsToInvitationGroup())   // 5. 기능 설정 필드들 추가
+    app.migrations.add(AddTimestampsToAdminUser())               // 5. AdminUser 타임스탬프 컬럼 추가
+    app.migrations.add(AddFeatureSettingsToInvitationGroup())   // 6. 기능 설정 필드들 추가
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()
