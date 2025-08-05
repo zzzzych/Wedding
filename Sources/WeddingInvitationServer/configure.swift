@@ -45,11 +45,12 @@ public func configure(_ app: Application) async throws {
     
     // 🔄 마이그레이션 등록 - 순서대로 실행됩니다
     app.migrations.add(CreateWeddingSchema())                    // 1. 메인 테이블들 생성
-    app.migrations.add(CreateInitialAdminUser())                 // 2. 관리자 계정 생성
+    app.migrations.add(CreateInitialAdminUser())                 // 2. 관리자 계정 생성  
     app.migrations.add(AddRoleToAdminUser())                     // 3. role 컬럼 추가
-    app.migrations.add(AddTimestampsToAdminUser())               // 4. AdminUser 타임스탬프 컬럼 추가 (먼저 실행)
-    app.migrations.add(UpdateExistingAdminRole())                // 5. 기존 관리자에 role 설정 (나중에 실행)
-    // AddFeatureSettingsToInvitationGroup() 제거 - CreateWeddingSchema에서 이미 생성됨
+    app.migrations.add(AddTimestampsToAdminUser())               // 4. AdminUser 타임스탬프 컬럼 추가
+    app.migrations.add(UpdateExistingAdminRole())                // 5. 기존 관리자에 role 설정
+    // 다음 라인들을 삭제해주세요:
+    // app.migrations.add(AddFeatureSettingsToInvitationGroup()) // ❌ 삭제 - CreateWeddingSchema에 이미 포함됨
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()
