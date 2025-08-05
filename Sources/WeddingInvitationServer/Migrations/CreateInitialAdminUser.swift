@@ -18,17 +18,31 @@ struct CreateInitialAdminUser: Migration {
             return database.eventLoop.makeSucceededFuture(()) // 에러 대신 조용히 스킵
         }
         
-        do {
-            // 관리자 계정 생성
-            let adminUser = try AdminUser(
-                username: adminUsername,
-                password: adminPassword
-            )
-            
-            return adminUser.save(on: database)
-        } catch {
-            return database.eventLoop.makeFailedFuture(error)
-        }
+        // ⭐ 중복 체크 추가: 이미 존재하는 사용자인지 확인
+        return AdminUser.query(on: database)
+            .filter(\.$username == adminUsername)
+            .first()
+            .flatMap { existingUser in
+                // 이미 존재하면 스킵
+                if existingUser != nil {
+                    print("✅ 관리자 '\(adminUsername)'이 이미 존재합니다. 스킵합니다.")
+                    return database.eventLoop.makeSucceededFuture(())
+                }
+                
+                // 존재하지 않으면 새로 생성
+                do {
+                    let adminUser = try AdminUser(
+                        username: adminUsername,
+                        password: adminPassword
+                    )
+                    
+                    return adminUser.save(on: database).map {
+                        print("✅ 새 관리자 계정 '\(adminUsername)' 생성 완료")
+                    }
+                } catch {
+                    return database.eventLoop.makeFailedFuture(error)
+                }
+            }
     }
 
     func revert(on database: any Database) -> EventLoopFuture<Void> {
