@@ -11,8 +11,9 @@ import Fluent
 struct CreateWeddingSchema: Migration {
     
     func prepare(on database: any Database) -> EventLoopFuture<Void> {
-        // 먼저 WeddingInfo 테이블을 새로운 구조로 만듭니다.
-        database.schema(WeddingInfo.schema)
+        // 테이블이 이미 존재하는지 확인 후 생성
+        return database.schema(WeddingInfo.schema)
+            .ignoreExisting()  // ⭐ 이 라인 추가 - 이미 존재하면 무시
             .id()
             .field("groom_name", .string, .required)
             .field("bride_name", .string, .required)
@@ -37,15 +38,14 @@ struct CreateWeddingSchema: Migration {
             .field("account_info", .array(of: .string), .required)
             .create()
             .flatMap {
-                // InvitationGroup 테이블 생성 부분을 찾아서
+                // InvitationGroup 테이블 생성
                 database.schema(InvitationGroup.schema)
+                    .ignoreExisting()  // ⭐ 이 라인도 추가
                     .id()
                     .field("group_name", .string, .required)
                     .field("group_type", .string, .required)
                     .field("unique_code", .string, .required)
-                    // ✅ 누락된 필드 추가
                     .field("greeting_message", .string, .required)
-                    // ✅ 기능 설정 필드들도 함께 추가
                     .field("show_venue_info", .bool)
                     .field("show_share_button", .bool)
                     .field("show_ceremony_program", .bool)
@@ -57,6 +57,7 @@ struct CreateWeddingSchema: Migration {
             }.flatMap {
                 // AdminUser 테이블 생성
                 database.schema(AdminUser.schema)
+                    .ignoreExisting()  // ⭐ 이 라인도 추가
                     .id()
                     .field("username", .string, .required)
                     .unique(on: "username")
@@ -65,6 +66,7 @@ struct CreateWeddingSchema: Migration {
             }.flatMap {
                 // RsvpResponse 테이블 생성
                 database.schema(RsvpResponse.schema)
+                    .ignoreExisting()  // ⭐ 이 라인도 추가
                     .id()
                     .field("responder_name", .string, .required)
                     .field("is_attending", .bool, .required)
