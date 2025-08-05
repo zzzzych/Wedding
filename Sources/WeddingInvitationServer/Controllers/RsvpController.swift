@@ -24,7 +24,8 @@ struct RsvpController: RouteCollection {
         let admin = routes.grouped("admin")
         
         // 응답 조회 API들
-        admin.get("rsvps", use: getAllRsvps)                      // 전체 응답 현황 조회
+        admin.get("rsvps", use: getAllRsvps)                      // 전체 응답 통계 조회
+        admin.get("rsvps", "list", use: getAllRsvpsList)          // ✅ 새로 추가: 개별 응답 목록 조회
         admin.get("rsvps", ":rsvpId", use: getRsvp)               // 특정 응답 조회
         
         // 응답 관리 API들
@@ -272,5 +273,43 @@ struct RsvpController: RouteCollection {
         response.body = .init(string: csvContent)
         
         return response
+    }
+
+
+    /// 모든 참석 응답 목록 조회 (관리자용) - 개별 응답 포함
+    /// 관리자가 개별 응답자들의 상세 정보를 확인할 때 사용합니다
+    /// - Parameter req: HTTP 요청 객체
+    /// - Returns: 개별 응답 목록과 통계 정보
+    func getAllRsvpsList(req: Request) async throws -> RsvpListResponse {
+        // 1. 모든 참석 응답 조회 (그룹 정보 포함)
+        let allRsvps = try await RsvpResponse.query(on: req.db)
+            .with(\.$group)  // 관련된 그룹 정보도 함께 로드
+            .sort(\.$createdAt, .descending) // 최신 응답순으로 정렬
+            .all()
+        
+        // 2. 개별 응답을 SimpleRsvpWithGroupInfo로 변환
+        let responseList = allRsvps.map { rsvp in
+            SimpleRsvpWithGroupInfo.from(rsvp)
+        }
+        
+        // 3. 통계 계산
+        let totalResponses = allRsvps.count
+        let attendingResponses = allRsvps.filter { $0.isAttending }
+        let attendingCount = attendingResponses.count
+        let totalAdults = attendingResponses.reduce(0) { $0 + $1.adultCount }
+        let totalChildren = attendingResponses.reduce(0) { $0 + $1.childrenCount }
+        
+        // 4. 통계와 개별 응답 목록을 함께 반환
+        return RsvpListResponse(
+            responses: responseList,
+            summary: RsvpSummary(
+                totalResponses: totalResponses,
+                attendingResponses: attendingCount,
+                notAttendingResponses: totalResponses - attendingCount,
+                totalAttendingCount: totalAdults + totalChildren,
+                totalAdultCount: totalAdults,
+                totalChildrenCount: totalChildren
+            )
+        )
     }
 }

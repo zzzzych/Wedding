@@ -107,6 +107,15 @@ struct RsvpSummary: Content {
     let totalChildrenCount: Int
 }
 
+/// 개별 응답 목록과 통계가 포함된 전체 응답 데이터
+/// 관리자가 개별 응답자 정보와 통계를 함께 확인할 때 사용하는 구조체입니다
+struct RsvpListResponse: Content {
+    /// 개별 응답 목록 (그룹 정보 포함)
+    let responses: [SimpleRsvpWithGroupInfo]
+    /// 전체 응답 통계 정보
+    let summary: RsvpSummary
+}
+
 // MARK: - 그룹 관련 공통 모델들
 
 /// 통계 정보가 포함된 그룹 데이터
