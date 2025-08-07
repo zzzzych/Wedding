@@ -167,6 +167,9 @@ func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
             req.logger.error("❌ 데이터베이스 저장 실패: \(saveError)")
             req.logger.error("❌ 저장 실패 상세: \(String(describing: saveError))")
             
+            // 🆕 더 상세한 오류 정보 출력 (임시 디버깅용)
+            req.logger.error("❌ 상세 오류 내용: \(String(reflecting: saveError))")
+            
             // Fluent/PostgreSQL 특정 에러 분석
             if let fluentError = saveError as? FluentError {
                 req.logger.error("❌ Fluent 에러: \(fluentError)")
