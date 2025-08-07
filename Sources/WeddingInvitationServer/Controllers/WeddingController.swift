@@ -85,24 +85,46 @@ struct WeddingController: RouteCollection {
     }
     
     /// 결혼식 기본 정보 전체 수정 또는 생성 (관리자용)
-    /// - Description: 기존 데이터가 있으면 수정하고, 없으면 새로 생성합니다.
-    /// - Method: `PUT`
-    /// - Path: `/api/admin/wedding-info`
-    func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
-        // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
-        // 현재는 구현 단순화를 위해 생략
+/// - Description: 기존 데이터가 있으면 수정하고, 없으면 새로 생성합니다.
+/// - Method: `PUT`
+/// - Path: `/api/admin/wedding-info`
+func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
+    // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
+    // 현재는 구현 단순화를 위해 생략
+    
+    do {
+        // 2. 요청 데이터 파싱 - 더 자세한 로깅 추가
+        req.logger.info("📥 결혼식 정보 수정 요청 시작")
+        req.logger.info("📊 요청 본문 크기: \(req.body.data?.readableBytes ?? 0) bytes")
         
-        // 2. 요청 데이터 파싱
-        let updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
+        let updateData: WeddingInfoUpdateRequest
+        do {
+            updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
+            req.logger.info("✅ 요청 데이터 디코딩 성공")
+            req.logger.info("👰 신부: \(updateData.brideName), 🤵 신랑: \(updateData.groomName)")
+            req.logger.info("📅 결혼식 날짜: \(updateData.weddingDate)")
+            req.logger.info("🏛️ 웨딩홀: \(updateData.venueName)")
+        } catch {
+            req.logger.error("❌ 요청 데이터 디코딩 실패: \(error)")
+            throw Abort(.badRequest, reason: "요청 데이터 형식이 올바르지 않습니다: \(error.localizedDescription)")
+        }
         
         // 3. 기존 결혼식 정보 조회
-        let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first()
+        req.logger.info("🔍 기존 결혼식 정보 조회 중...")
+        let existingWeddingInfo: WeddingInfo?
+        do {
+            existingWeddingInfo = try await WeddingInfo.query(on: req.db).first()
+            req.logger.info("✅ 데이터베이스 조회 완료. 기존 데이터 존재: \(existingWeddingInfo != nil)")
+        } catch {
+            req.logger.error("❌ 데이터베이스 조회 실패: \(error)")
+            throw Abort(.internalServerError, reason: "데이터베이스 조회 중 오류가 발생했습니다: \(error.localizedDescription)")
+        }
         
         let weddingInfo: WeddingInfo
         
         if let existing = existingWeddingInfo {
             // 기존 데이터가 있으면 업데이트
-            req.logger.info("🔄 기존 결혼식 정보 업데이트")
+            req.logger.info("🔄 기존 결혼식 정보 업데이트 (ID: \(existing.id?.uuidString ?? "unknown"))")
             weddingInfo = existing
         } else {
             // 기존 데이터가 없으면 새로 생성
@@ -110,7 +132,9 @@ struct WeddingController: RouteCollection {
             weddingInfo = WeddingInfo()
         }
         
-        // 4. 모든 필드 업데이트
+        // 4. 모든 필드 업데이트 - 필드별 상세 로깅
+        req.logger.info("📝 필드 업데이트 시작...")
+        
         weddingInfo.groomName = updateData.groomName
         weddingInfo.brideName = updateData.brideName
         weddingInfo.weddingDate = updateData.weddingDate
@@ -124,12 +148,50 @@ struct WeddingController: RouteCollection {
         weddingInfo.ceremonyProgram = updateData.ceremonyProgram
         weddingInfo.accountInfo = updateData.accountInfo
         
-        // 5. 데이터베이스에 저장 (생성 또는 업데이트)
-        try await weddingInfo.save(on: req.db)
+        req.logger.info("✅ 필드 업데이트 완료")
+        req.logger.info("📊 최종 데이터 확인:")
+        req.logger.info("  - 신랑: '\(weddingInfo.groomName)' (\(weddingInfo.groomName.count)글자)")
+        req.logger.info("  - 신부: '\(weddingInfo.brideName)' (\(weddingInfo.brideName.count)글자)")
+        req.logger.info("  - 웨딩홀: '\(weddingInfo.venueName)' (\(weddingInfo.venueName.count)글자)")
+        req.logger.info("  - 주소: '\(weddingInfo.venueAddress)' (\(weddingInfo.venueAddress.count)글자)")
+        req.logger.info("  - 예식순서: '\(weddingInfo.ceremonyProgram)' (\(weddingInfo.ceremonyProgram.count)글자)")
+        req.logger.info("  - 인사말: '\(weddingInfo.greetingMessage)' (\(weddingInfo.greetingMessage.count)글자)")
+        req.logger.info("  - 계좌정보: \(weddingInfo.accountInfo.count)개 항목")
         
-        req.logger.info("✅ 결혼식 정보 저장 완료")
+        // 5. 데이터베이스에 저장 (생성 또는 업데이트) - 상세 에러 처리
+        req.logger.info("💾 데이터베이스 저장 시작...")
+        do {
+            try await weddingInfo.save(on: req.db)
+            req.logger.info("✅ 결혼식 정보 저장 완료 (ID: \(weddingInfo.id?.uuidString ?? "unknown"))")
+        } catch let saveError {
+            req.logger.error("❌ 데이터베이스 저장 실패: \(saveError)")
+            req.logger.error("❌ 저장 실패 상세: \(String(describing: saveError))")
+            
+            // Fluent/PostgreSQL 특정 에러 분석
+            if let fluentError = saveError as? FluentError {
+                req.logger.error("❌ Fluent 에러: \(fluentError)")
+            }
+            
+            throw Abort(.internalServerError, reason: "데이터베이스 저장 중 오류가 발생했습니다: \(saveError.localizedDescription)")
+        }
+        
+        req.logger.info("🎉 결혼식 정보 수정 프로세스 완료")
         return weddingInfo
+        
+    } catch let controllerError {
+        // 최상위 에러 캐치 및 로깅
+        req.logger.error("❌ updateWeddingInfo 함수 전체 에러: \(controllerError)")
+        req.logger.error("❌ 에러 타입: \(type(of: controllerError))")
+        req.logger.error("❌ 에러 상세: \(String(describing: controllerError))")
+        
+        // Abort 에러는 그대로 전달, 그 외는 일반적인 내부 서버 에러로 변환
+        if let abort = controllerError as? Abort {
+            throw abort
+        } else {
+            throw Abort(.internalServerError, reason: "결혼식 정보 처리 중 예상치 못한 오류가 발생했습니다: \(controllerError.localizedDescription)")
+        }
     }
+}
 
     // MARK: - PATCH /api/admin/wedding-info
     /// 결혼식 정보 부분 수정 (관리자용)
