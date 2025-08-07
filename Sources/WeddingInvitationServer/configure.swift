@@ -11,49 +11,6 @@ public func configure(_ app: Application) async throws {
         fatalError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     }
 
-    // 🆕 JSON 디코더 날짜 형식 설정 - 다중 ISO 8601 형식 지원
-    let decoder = JSONDecoder()
-    decoder.dateDecodingStrategy = .custom { decoder in
-        let container = try decoder.singleValueContainer()
-        let dateString = try container.decode(String.self)
-        
-        // ISO 8601 포맷터 생성
-        let isoFormatter = ISO8601DateFormatter()
-        
-        // 먼저 fractional seconds 포함 형태로 시도
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        if let date = isoFormatter.date(from: dateString) {
-            return date
-        }
-        
-        // fractional seconds 없는 형태로 재시도
-        isoFormatter.formatOptions = [.withInternetDateTime]
-        if let date = isoFormatter.date(from: dateString) {
-            return date
-        }
-        
-        // 기본 DateFormatter로 최종 시도
-        let fallbackFormatter = DateFormatter()
-        fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-        fallbackFormatter.timeZone = TimeZone(abbreviation: "UTC")
-        if let date = fallbackFormatter.date(from: dateString) {
-            return date
-        }
-        
-        throw DecodingError.dataCorrupted(
-            DecodingError.Context(
-                codingPath: decoder.codingPath,
-                debugDescription: "날짜 형식이 올바르지 않습니다: \(dateString). ISO 8601 형식이 필요합니다."
-            )
-        )
-    }
-    ContentConfiguration.global.use(decoder: decoder, for: .json)
-    
-    // 🆕 JSON 인코더 날짜 형식 설정  
-    let encoder = JSONEncoder()
-    encoder.dateEncodingStrategy = .iso8601
-    ContentConfiguration.global.use(encoder: encoder, for: .json)
-    
     // PostgreSQL URL을 파싱해서 SSL을 비활성화하고 연결
     try app.databases.use(.postgres(url: databaseURL + "?sslmode=disable"), as: .psql)
     
