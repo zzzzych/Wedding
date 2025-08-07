@@ -10,6 +10,16 @@ public func configure(_ app: Application) async throws {
     guard let databaseURL = Environment.get("DATABASE_URL") else {
         fatalError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     }
+
+    // 🆕 JSON 디코더 날짜 형식 설정
+    let decoder = JSONDecoder()
+    decoder.dateDecodingStrategy = .iso8601
+    ContentConfiguration.global.use(decoder: decoder, for: .json)
+    
+    // 🆕 JSON 인코더 날짜 형식 설정  
+    let encoder = JSONEncoder()
+    encoder.dateEncodingStrategy = .iso8601
+    ContentConfiguration.global.use(encoder: encoder, for: .json)
     
     // PostgreSQL URL을 파싱해서 SSL을 비활성화하고 연결
     try app.databases.use(.postgres(url: databaseURL + "?sslmode=disable"), as: .psql)

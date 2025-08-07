@@ -189,6 +189,8 @@ func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
 
 // MARK: - Request Models
 
+// MARK: - Request Models
+
 /// 결혼식 정보 전체 수정 요청 데이터
 struct WeddingInfoUpdateRequest: Content {
     let groomName: String
