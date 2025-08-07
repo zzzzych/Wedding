@@ -46,48 +46,90 @@ struct WeddingController: RouteCollection {
         return weddingInfo
     }
     
-    // MARK: - GET /api/admin/wedding-info
-    /// 결혼식 정보 조회 (관리자용)
-    func getWeddingInfo(req: Request) async throws -> WeddingInfo {
-        // 1. 데이터베이스에서 첫 번째 결혼식 정보 조회
-        // (현재는 하나의 결혼식만 지원하므로 첫 번째 정보 반환)
-        guard let weddingInfo = try await WeddingInfo.query(on: req.db).first() else {
-            throw Abort(.notFound, reason: "결혼식 정보를 찾을 수 없습니다.")
-        }
+    /// 결혼식 기본 정보 조회 (관리자용)
+/// - Description: 관리자가 결혼식 기본 정보를 조회합니다. 데이터가 없으면 기본값을 반환합니다.
+/// - Method: `GET`
+/// - Path: `/api/admin/wedding-info`
+func getWeddingInfo(req: Request) async throws -> WeddingInfo {
+    // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
+    // 현재는 구현 단순화를 위해 생략
+    
+    // 2. 데이터베이스에서 결혼식 정보 조회
+    if let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first() {
+        // 기존 데이터가 있으면 반환
+        req.logger.info("✅ 기존 결혼식 정보 조회 성공")
+        return existingWeddingInfo
+    } else {
+        // 데이터가 없으면 빈 기본값으로 새 인스턴스 생성해서 반환
+        req.logger.info("📝 결혼식 정보가 없어서 기본값 반환")
         
-        return weddingInfo
+        let defaultWeddingInfo = WeddingInfo()
+        // 필수 필드들을 빈 문자열로 초기화
+        defaultWeddingInfo.groomName = ""
+        defaultWeddingInfo.brideName = ""
+        defaultWeddingInfo.weddingDate = Date() // 현재 날짜로 임시 설정
+        defaultWeddingInfo.venueName = ""
+        defaultWeddingInfo.venueAddress = ""
+        defaultWeddingInfo.greetingMessage = ""
+        defaultWeddingInfo.ceremonyProgram = ""
+        defaultWeddingInfo.accountInfo = []
+        
+        // 선택사항 필드들
+        defaultWeddingInfo.kakaoMapUrl = ""
+        defaultWeddingInfo.naverMapUrl = ""
+        defaultWeddingInfo.parkingInfo = ""
+        defaultWeddingInfo.transportInfo = ""
+        
+        return defaultWeddingInfo
+    }
+}
+    
+    /// 결혼식 기본 정보 전체 수정 또는 생성 (관리자용)
+/// - Description: 기존 데이터가 있으면 수정하고, 없으면 새로 생성합니다.
+/// - Method: `PUT`
+/// - Path: `/api/admin/wedding-info`
+func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
+    // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
+    // 현재는 구현 단순화를 위해 생략
+    
+    // 2. 요청 데이터 파싱
+    let updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
+    
+    // 3. 기존 결혼식 정보 조회
+    let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first()
+    
+    let weddingInfo: WeddingInfo
+    
+    if let existing = existingWeddingInfo {
+        // 기존 데이터가 있으면 업데이트
+        req.logger.info("🔄 기존 결혼식 정보 업데이트")
+        weddingInfo = existing
+    } else {
+        // 기존 데이터가 없으면 새로 생성
+        req.logger.info("🆕 새 결혼식 정보 생성")
+        weddingInfo = WeddingInfo()
     }
     
-    // MARK: - PUT /api/admin/wedding-info
-    /// 결혼식 정보 전체 수정 (관리자용)
-    func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
-        // 1. 기존 결혼식 정보 조회
-        guard let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first() else {
-            throw Abort(.notFound, reason: "수정할 결혼식 정보를 찾을 수 없습니다.")
-        }
-        
-        // 2. 요청 데이터 파싱
-        let updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
-        
-        // 3. 모든 필드 업데이트
-        existingWeddingInfo.groomName = updateData.groomName
-        existingWeddingInfo.brideName = updateData.brideName
-        existingWeddingInfo.weddingDate = updateData.weddingDate
-        existingWeddingInfo.venueName = updateData.venueName
-        existingWeddingInfo.venueAddress = updateData.venueAddress
-        existingWeddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
-        existingWeddingInfo.naverMapUrl = updateData.naverMapUrl
-        existingWeddingInfo.parkingInfo = updateData.parkingInfo
-        existingWeddingInfo.transportInfo = updateData.transportInfo
-        existingWeddingInfo.greetingMessage = updateData.greetingMessage
-        existingWeddingInfo.ceremonyProgram = updateData.ceremonyProgram
-        existingWeddingInfo.accountInfo = updateData.accountInfo
-        
-        // 4. 데이터베이스에 저장
-        try await existingWeddingInfo.save(on: req.db)
-        
-        return existingWeddingInfo
-    }
+    // 4. 모든 필드 업데이트
+    weddingInfo.groomName = updateData.groomName
+    weddingInfo.brideName = updateData.brideName
+    weddingInfo.weddingDate = updateData.weddingDate
+    weddingInfo.venueName = updateData.venueName
+    weddingInfo.venueAddress = updateData.venueAddress
+    weddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
+    weddingInfo.naverMapUrl = updateData.naverMapUrl
+    weddingInfo.parkingInfo = updateData.parkingInfo
+    weddingInfo.transportInfo = updateData.transportInfo
+    weddingInfo.greetingMessage = updateData.greetingMessage
+    weddingInfo.ceremonyProgram = updateData.ceremonyProgram
+    weddingInfo.accountInfo = updateData.accountInfo
+    
+    // 5. 데이터베이스에 저장 (생성 또는 업데이트)
+    try await weddingInfo.save(on: req.db)
+    
+    req.logger.info("✅ 결혼식 정보 저장 완료")
+    return weddingInfo
+}
 
     // MARK: - PATCH /api/admin/wedding-info
     /// 결혼식 정보 부분 수정 (관리자용)
