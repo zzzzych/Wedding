@@ -47,89 +47,89 @@ struct WeddingController: RouteCollection {
     }
     
     /// 결혼식 기본 정보 조회 (관리자용)
-/// - Description: 관리자가 결혼식 기본 정보를 조회합니다. 데이터가 없으면 기본값을 반환합니다.
-/// - Method: `GET`
-/// - Path: `/api/admin/wedding-info`
-func getWeddingInfo(req: Request) async throws -> WeddingInfo {
-    // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
-    // 현재는 구현 단순화를 위해 생략
-    
-    // 2. 데이터베이스에서 결혼식 정보 조회
-    if let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first() {
-        // 기존 데이터가 있으면 반환
-        req.logger.info("✅ 기존 결혼식 정보 조회 성공")
-        return existingWeddingInfo
-    } else {
-        // 데이터가 없으면 빈 기본값으로 새 인스턴스 생성해서 반환
-        req.logger.info("📝 결혼식 정보가 없어서 기본값 반환")
+    /// - Description: 관리자가 결혼식 기본 정보를 조회합니다. 데이터가 없으면 기본값을 반환합니다.
+    /// - Method: `GET`
+    /// - Path: `/api/admin/wedding-info`
+    func getWeddingInfo(req: Request) async throws -> WeddingInfo {
+        // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
+        // 현재는 구현 단순화를 위해 생략
         
-        let defaultWeddingInfo = WeddingInfo()
-        // 필수 필드들을 빈 문자열로 초기화
-        defaultWeddingInfo.groomName = ""
-        defaultWeddingInfo.brideName = ""
-        defaultWeddingInfo.weddingDate = Date() // 현재 날짜로 임시 설정
-        defaultWeddingInfo.venueName = ""
-        defaultWeddingInfo.venueAddress = ""
-        defaultWeddingInfo.greetingMessage = ""
-        defaultWeddingInfo.ceremonyProgram = ""
-        defaultWeddingInfo.accountInfo = []
-        
-        // 선택사항 필드들
-        defaultWeddingInfo.kakaoMapUrl = ""
-        defaultWeddingInfo.naverMapUrl = ""
-        defaultWeddingInfo.parkingInfo = ""
-        defaultWeddingInfo.transportInfo = ""
-        
-        return defaultWeddingInfo
+        // 2. 데이터베이스에서 결혼식 정보 조회
+        if let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first() {
+            // 기존 데이터가 있으면 반환
+            req.logger.info("✅ 기존 결혼식 정보 조회 성공")
+            return existingWeddingInfo
+        } else {
+            // 데이터가 없으면 빈 기본값으로 새 인스턴스 생성해서 반환
+            req.logger.info("📝 결혼식 정보가 없어서 기본값 반환")
+            
+            let defaultWeddingInfo = WeddingInfo()
+            // 필수 필드들을 빈 문자열로 초기화
+            defaultWeddingInfo.groomName = ""
+            defaultWeddingInfo.brideName = ""
+            defaultWeddingInfo.weddingDate = Date() // 현재 날짜로 임시 설정
+            defaultWeddingInfo.venueName = ""
+            defaultWeddingInfo.venueAddress = ""
+            defaultWeddingInfo.greetingMessage = ""
+            defaultWeddingInfo.ceremonyProgram = ""
+            defaultWeddingInfo.accountInfo = []
+            
+            // 선택사항 필드들
+            defaultWeddingInfo.kakaoMapUrl = ""
+            defaultWeddingInfo.naverMapUrl = ""
+            defaultWeddingInfo.parkingInfo = ""
+            defaultWeddingInfo.transportInfo = ""
+            
+            return defaultWeddingInfo
+        }
     }
-}
     
     /// 결혼식 기본 정보 전체 수정 또는 생성 (관리자용)
-/// - Description: 기존 데이터가 있으면 수정하고, 없으면 새로 생성합니다.
-/// - Method: `PUT`
-/// - Path: `/api/admin/wedding-info`
-func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
-    // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
-    // 현재는 구현 단순화를 위해 생략
-    
-    // 2. 요청 데이터 파싱
-    let updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
-    
-    // 3. 기존 결혼식 정보 조회
-    let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first()
-    
-    let weddingInfo: WeddingInfo
-    
-    if let existing = existingWeddingInfo {
-        // 기존 데이터가 있으면 업데이트
-        req.logger.info("🔄 기존 결혼식 정보 업데이트")
-        weddingInfo = existing
-    } else {
-        // 기존 데이터가 없으면 새로 생성
-        req.logger.info("🆕 새 결혼식 정보 생성")
-        weddingInfo = WeddingInfo()
+    /// - Description: 기존 데이터가 있으면 수정하고, 없으면 새로 생성합니다.
+    /// - Method: `PUT`
+    /// - Path: `/api/admin/wedding-info`
+    func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
+        // 1. JWT 토큰 검증 (실제 프로덕션에서는 미들웨어로 처리)
+        // 현재는 구현 단순화를 위해 생략
+        
+        // 2. 요청 데이터 파싱
+        let updateData = try req.content.decode(WeddingInfoUpdateRequest.self)
+        
+        // 3. 기존 결혼식 정보 조회
+        let existingWeddingInfo = try await WeddingInfo.query(on: req.db).first()
+        
+        let weddingInfo: WeddingInfo
+        
+        if let existing = existingWeddingInfo {
+            // 기존 데이터가 있으면 업데이트
+            req.logger.info("🔄 기존 결혼식 정보 업데이트")
+            weddingInfo = existing
+        } else {
+            // 기존 데이터가 없으면 새로 생성
+            req.logger.info("🆕 새 결혼식 정보 생성")
+            weddingInfo = WeddingInfo()
+        }
+        
+        // 4. 모든 필드 업데이트
+        weddingInfo.groomName = updateData.groomName
+        weddingInfo.brideName = updateData.brideName
+        weddingInfo.weddingDate = updateData.weddingDate
+        weddingInfo.venueName = updateData.venueName
+        weddingInfo.venueAddress = updateData.venueAddress
+        weddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
+        weddingInfo.naverMapUrl = updateData.naverMapUrl
+        weddingInfo.parkingInfo = updateData.parkingInfo
+        weddingInfo.transportInfo = updateData.transportInfo
+        weddingInfo.greetingMessage = updateData.greetingMessage
+        weddingInfo.ceremonyProgram = updateData.ceremonyProgram
+        weddingInfo.accountInfo = updateData.accountInfo
+        
+        // 5. 데이터베이스에 저장 (생성 또는 업데이트)
+        try await weddingInfo.save(on: req.db)
+        
+        req.logger.info("✅ 결혼식 정보 저장 완료")
+        return weddingInfo
     }
-    
-    // 4. 모든 필드 업데이트
-    weddingInfo.groomName = updateData.groomName
-    weddingInfo.brideName = updateData.brideName
-    weddingInfo.weddingDate = updateData.weddingDate
-    weddingInfo.venueName = updateData.venueName
-    weddingInfo.venueAddress = updateData.venueAddress
-    weddingInfo.kakaoMapUrl = updateData.kakaoMapUrl
-    weddingInfo.naverMapUrl = updateData.naverMapUrl
-    weddingInfo.parkingInfo = updateData.parkingInfo
-    weddingInfo.transportInfo = updateData.transportInfo
-    weddingInfo.greetingMessage = updateData.greetingMessage
-    weddingInfo.ceremonyProgram = updateData.ceremonyProgram
-    weddingInfo.accountInfo = updateData.accountInfo
-    
-    // 5. 데이터베이스에 저장 (생성 또는 업데이트)
-    try await weddingInfo.save(on: req.db)
-    
-    req.logger.info("✅ 결혼식 정보 저장 완료")
-    return weddingInfo
-}
 
     // MARK: - PATCH /api/admin/wedding-info
     /// 결혼식 정보 부분 수정 (관리자용)
@@ -189,8 +189,6 @@ func updateWeddingInfo(req: Request) async throws -> WeddingInfo {
 
 // MARK: - Request Models
 
-// MARK: - Request Models
-
 /// 결혼식 정보 전체 수정 요청 데이터
 struct WeddingInfoUpdateRequest: Content {
     let groomName: String
@@ -221,126 +219,4 @@ struct WeddingInfoPatchRequest: Content {
     let greetingMessage: String?
     let ceremonyProgram: String?
     let accountInfo: [String]?
-}
-
-// MARK: - Custom Date Decoding
-
-extension WeddingInfoUpdateRequest {
-    /// 커스텀 날짜 디코딩을 위한 CodingKeys
-    enum CodingKeys: String, CodingKey {
-        case groomName, brideName, weddingDate, venueName, venueAddress
-        case kakaoMapUrl, naverMapUrl, parkingInfo, transportInfo
-        case greetingMessage, ceremonyProgram, accountInfo
-    }
-    
-    /// 커스텀 디코딩 초기화
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // 기본 문자열 필드들
-        self.groomName = try container.decode(String.self, forKey: .groomName)
-        self.brideName = try container.decode(String.self, forKey: .brideName)
-        self.venueName = try container.decode(String.self, forKey: .venueName)
-        self.venueAddress = try container.decode(String.self, forKey: .venueAddress)
-        self.greetingMessage = try container.decode(String.self, forKey: .greetingMessage)
-        self.ceremonyProgram = try container.decode(String.self, forKey: .ceremonyProgram)
-        self.accountInfo = try container.decode([String].self, forKey: .accountInfo)
-        
-        // 선택적 문자열 필드들 (null 처리)
-        self.kakaoMapUrl = try container.decodeIfPresent(String.self, forKey: .kakaoMapUrl)
-        self.naverMapUrl = try container.decodeIfPresent(String.self, forKey: .naverMapUrl)
-        self.parkingInfo = try container.decodeIfPresent(String.self, forKey: .parkingInfo)
-        self.transportInfo = try container.decodeIfPresent(String.self, forKey: .transportInfo)
-        
-        // 📅 커스텀 날짜 디코딩 - ISO 8601 문자열을 Date로 변환
-        let weddingDateString = try container.decode(String.self, forKey: .weddingDate)
-        
-        // ISO 8601 포맷터 생성
-        let isoFormatter = ISO8601DateFormatter()
-        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        // 먼저 fractional seconds 포함 형태로 시도
-        if let date = isoFormatter.date(from: weddingDateString) {
-            self.weddingDate = date
-        } else {
-            // fractional seconds 없는 형태로 재시도
-            isoFormatter.formatOptions = [.withInternetDateTime]
-            if let date = isoFormatter.date(from: weddingDateString) {
-                self.weddingDate = date
-            } else {
-                // 기본 DateFormatter로 최종 시도
-                let fallbackFormatter = DateFormatter()
-                fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-                fallbackFormatter.timeZone = TimeZone(abbreviation: "UTC")
-                
-                if let date = fallbackFormatter.date(from: weddingDateString) {
-                    self.weddingDate = date
-                } else {
-                    throw DecodingError.dataCorruptedError(
-                        forKey: .weddingDate,
-                        in: container,
-                        debugDescription: "날짜 형식이 올바르지 않습니다: \(weddingDateString)"
-                    )
-                }
-            }
-        }
-    }
-}
-
-extension WeddingInfoPatchRequest {
-    /// 커스텀 날짜 디코딩을 위한 CodingKeys
-    enum CodingKeys: String, CodingKey {
-        case groomName, brideName, weddingDate, venueName, venueAddress
-        case kakaoMapUrl, naverMapUrl, parkingInfo, transportInfo
-        case greetingMessage, ceremonyProgram, accountInfo
-    }
-    
-    /// 커스텀 디코딩 초기화 (PATCH용 - 모든 필드 선택사항)
-    init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        
-        // 모든 필드가 선택사항이므로 decodeIfPresent 사용
-        self.groomName = try container.decodeIfPresent(String.self, forKey: .groomName)
-        self.brideName = try container.decodeIfPresent(String.self, forKey: .brideName)
-        self.venueName = try container.decodeIfPresent(String.self, forKey: .venueName)
-        self.venueAddress = try container.decodeIfPresent(String.self, forKey: .venueAddress)
-        self.greetingMessage = try container.decodeIfPresent(String.self, forKey: .greetingMessage)
-        self.ceremonyProgram = try container.decodeIfPresent(String.self, forKey: .ceremonyProgram)
-        self.accountInfo = try container.decodeIfPresent([String].self, forKey: .accountInfo)
-        self.kakaoMapUrl = try container.decodeIfPresent(String.self, forKey: .kakaoMapUrl)
-        self.naverMapUrl = try container.decodeIfPresent(String.self, forKey: .naverMapUrl)
-        self.parkingInfo = try container.decodeIfPresent(String.self, forKey: .parkingInfo)
-        self.transportInfo = try container.decodeIfPresent(String.self, forKey: .transportInfo)
-        
-        // 📅 선택적 날짜 디코딩
-        if let weddingDateString = try container.decodeIfPresent(String.self, forKey: .weddingDate) {
-            let isoFormatter = ISO8601DateFormatter()
-            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            
-            if let date = isoFormatter.date(from: weddingDateString) {
-                self.weddingDate = date
-            } else {
-                isoFormatter.formatOptions = [.withInternetDateTime]
-                if let date = isoFormatter.date(from: weddingDateString) {
-                    self.weddingDate = date
-                } else {
-                    let fallbackFormatter = DateFormatter()
-                    fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
-                    fallbackFormatter.timeZone = TimeZone(abbreviation: "UTC")
-                    
-                    if let date = fallbackFormatter.date(from: weddingDateString) {
-                        self.weddingDate = date
-                    } else {
-                        throw DecodingError.dataCorruptedError(
-                            forKey: .weddingDate,
-                            in: container,
-                            debugDescription: "날짜 형식이 올바르지 않습니다: \(weddingDateString)"
-                        )
-                    }
-                }
-            }
-        } else {
-            self.weddingDate = nil
-        }
-    }
 }
