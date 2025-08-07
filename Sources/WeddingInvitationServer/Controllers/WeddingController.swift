@@ -220,3 +220,125 @@ struct WeddingInfoPatchRequest: Content {
     let ceremonyProgram: String?
     let accountInfo: [String]?
 }
+
+// MARK: - Custom Date Decoding
+
+extension WeddingInfoUpdateRequest {
+    /// 커스텀 날짜 디코딩을 위한 CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case groomName, brideName, weddingDate, venueName, venueAddress
+        case kakaoMapUrl, naverMapUrl, parkingInfo, transportInfo
+        case greetingMessage, ceremonyProgram, accountInfo
+    }
+    
+    /// 커스텀 디코딩 초기화
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // 기본 문자열 필드들
+        self.groomName = try container.decode(String.self, forKey: .groomName)
+        self.brideName = try container.decode(String.self, forKey: .brideName)
+        self.venueName = try container.decode(String.self, forKey: .venueName)
+        self.venueAddress = try container.decode(String.self, forKey: .venueAddress)
+        self.greetingMessage = try container.decode(String.self, forKey: .greetingMessage)
+        self.ceremonyProgram = try container.decode(String.self, forKey: .ceremonyProgram)
+        self.accountInfo = try container.decode([String].self, forKey: .accountInfo)
+        
+        // 선택적 문자열 필드들 (null 처리)
+        self.kakaoMapUrl = try container.decodeIfPresent(String.self, forKey: .kakaoMapUrl)
+        self.naverMapUrl = try container.decodeIfPresent(String.self, forKey: .naverMapUrl)
+        self.parkingInfo = try container.decodeIfPresent(String.self, forKey: .parkingInfo)
+        self.transportInfo = try container.decodeIfPresent(String.self, forKey: .transportInfo)
+        
+        // 📅 커스텀 날짜 디코딩 - ISO 8601 문자열을 Date로 변환
+        let weddingDateString = try container.decode(String.self, forKey: .weddingDate)
+        
+        // ISO 8601 포맷터 생성
+        let isoFormatter = ISO8601DateFormatter()
+        isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        
+        // 먼저 fractional seconds 포함 형태로 시도
+        if let date = isoFormatter.date(from: weddingDateString) {
+            self.weddingDate = date
+        } else {
+            // fractional seconds 없는 형태로 재시도
+            isoFormatter.formatOptions = [.withInternetDateTime]
+            if let date = isoFormatter.date(from: weddingDateString) {
+                self.weddingDate = date
+            } else {
+                // 기본 DateFormatter로 최종 시도
+                let fallbackFormatter = DateFormatter()
+                fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+                fallbackFormatter.timeZone = TimeZone(abbreviation: "UTC")
+                
+                if let date = fallbackFormatter.date(from: weddingDateString) {
+                    self.weddingDate = date
+                } else {
+                    throw DecodingError.dataCorruptedError(
+                        forKey: .weddingDate,
+                        in: container,
+                        debugDescription: "날짜 형식이 올바르지 않습니다: \(weddingDateString)"
+                    )
+                }
+            }
+        }
+    }
+}
+
+extension WeddingInfoPatchRequest {
+    /// 커스텀 날짜 디코딩을 위한 CodingKeys
+    enum CodingKeys: String, CodingKey {
+        case groomName, brideName, weddingDate, venueName, venueAddress
+        case kakaoMapUrl, naverMapUrl, parkingInfo, transportInfo
+        case greetingMessage, ceremonyProgram, accountInfo
+    }
+    
+    /// 커스텀 디코딩 초기화 (PATCH용 - 모든 필드 선택사항)
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        
+        // 모든 필드가 선택사항이므로 decodeIfPresent 사용
+        self.groomName = try container.decodeIfPresent(String.self, forKey: .groomName)
+        self.brideName = try container.decodeIfPresent(String.self, forKey: .brideName)
+        self.venueName = try container.decodeIfPresent(String.self, forKey: .venueName)
+        self.venueAddress = try container.decodeIfPresent(String.self, forKey: .venueAddress)
+        self.greetingMessage = try container.decodeIfPresent(String.self, forKey: .greetingMessage)
+        self.ceremonyProgram = try container.decodeIfPresent(String.self, forKey: .ceremonyProgram)
+        self.accountInfo = try container.decodeIfPresent([String].self, forKey: .accountInfo)
+        self.kakaoMapUrl = try container.decodeIfPresent(String.self, forKey: .kakaoMapUrl)
+        self.naverMapUrl = try container.decodeIfPresent(String.self, forKey: .naverMapUrl)
+        self.parkingInfo = try container.decodeIfPresent(String.self, forKey: .parkingInfo)
+        self.transportInfo = try container.decodeIfPresent(String.self, forKey: .transportInfo)
+        
+        // 📅 선택적 날짜 디코딩
+        if let weddingDateString = try container.decodeIfPresent(String.self, forKey: .weddingDate) {
+            let isoFormatter = ISO8601DateFormatter()
+            isoFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+            
+            if let date = isoFormatter.date(from: weddingDateString) {
+                self.weddingDate = date
+            } else {
+                isoFormatter.formatOptions = [.withInternetDateTime]
+                if let date = isoFormatter.date(from: weddingDateString) {
+                    self.weddingDate = date
+                } else {
+                    let fallbackFormatter = DateFormatter()
+                    fallbackFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'"
+                    fallbackFormatter.timeZone = TimeZone(abbreviation: "UTC")
+                    
+                    if let date = fallbackFormatter.date(from: weddingDateString) {
+                        self.weddingDate = date
+                    } else {
+                        throw DecodingError.dataCorruptedError(
+                            forKey: .weddingDate,
+                            in: container,
+                            debugDescription: "날짜 형식이 올바르지 않습니다: \(weddingDateString)"
+                        )
+                    }
+                }
+            }
+        } else {
+            self.weddingDate = nil
+        }
+    }
+}
