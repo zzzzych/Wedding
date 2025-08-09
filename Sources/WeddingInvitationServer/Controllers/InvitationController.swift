@@ -54,15 +54,15 @@ struct InvitationController: RouteCollection {
         // 3. 기본 결혼식 정보 하드코딩 (데이터베이스 의존성 제거)
         // 3. 기본 결혼식 정보 하드코딩 (데이터베이스 의존성 제거)
         let defaultWeddingInfo = WeddingInfo()
-        defaultWeddingInfo.groomName = "이지환"
-        defaultWeddingInfo.brideName = "이윤진"
+        defaultWeddingInfo.groomName = "지환"
+        defaultWeddingInfo.brideName = "윤진"
         defaultWeddingInfo.weddingDate = Date()
         defaultWeddingInfo.venueName = "포포인츠 바이 쉐라톤 조선 서울역 19층"
         defaultWeddingInfo.venueAddress = "서울특별시 용산구 한강대로 366"
         defaultWeddingInfo.kakaoMapUrl = "https://place.map.kakao.com/1821839394"
         defaultWeddingInfo.naverMapUrl = "https://naver.me/FG7xPnTx"
         defaultWeddingInfo.parkingInfo = "포포인츠 바이 쉐라톤 조선 서울역 주차장 지하 2-4층"
-        defaultWeddingInfo.transportInfo = "서울역 10번 출구쪽 지하 연결 통로 이용 도보 4분, 서울역 12번 출구 도보 2분"
+        defaultWeddingInfo.transportInfo = "서울역 10번 출구쪽 지하 연결 통로 이용 도보 4분\n서울역 12번 출구 도보 2분"
         defaultWeddingInfo.greetingMessage = "두 손 잡고 걷다보니 즐거움만 가득, 더 큰 즐거움의 시작에 함께 해주세요."
         defaultWeddingInfo.ceremonyProgram = "오후 6시 예식"
         defaultWeddingInfo.accountInfo = ["농협 121065-56-105215 (고인옥 / 신랑母)"]
