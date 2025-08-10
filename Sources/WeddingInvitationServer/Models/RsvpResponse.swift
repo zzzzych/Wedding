@@ -48,6 +48,10 @@ final class RsvpResponse: Model, Content, @unchecked Sendable {
     /// 관계 필드 - 어떤 그룹의 응답인지
     @Parent(key: "group_id")
     var group: InvitationGroup
+
+    /// 응답자 이름 (불참인 경우 응답한 사람의 이름을 별도로 저장)
+    @OptionalField(key: "responder_name")
+    var responderNameField: String?
     
     /// 빈 초기화 함수 (Fluent 요구사항)
     init() {}
@@ -62,12 +66,13 @@ final class RsvpResponse: Model, Content, @unchecked Sendable {
     ///   - message: 추가 메시지 (선택사항)
     ///   - groupID: 속한 그룹의 ID
     init(id: UUID? = nil, 
-         isAttending: Bool, 
-         totalCount: Int, 
-         attendeeNames: [String], 
-         phoneNumber: String? = nil, 
-         message: String? = nil, 
-         groupID: UUID) {
+     isAttending: Bool, 
+     totalCount: Int, 
+     attendeeNames: [String], 
+     responderName: String? = nil,
+     phoneNumber: String? = nil, 
+     message: String? = nil, 
+     groupID: UUID) {
         self.id = id
         self.isAttending = isAttending
         self.totalCount = totalCount
@@ -75,15 +80,27 @@ final class RsvpResponse: Model, Content, @unchecked Sendable {
         self.phoneNumber = phoneNumber
         self.message = message
         self.$group.id = groupID
+        self.responderNameField = responderName
     }
     
-    /// 대표 응답자 이름 (첫 번째 참석자 이름)
-    /// 불참인 경우 "미응답자"를 반환
+    /// 대표 응답자 이름 (참석자 또는 응답자)
     var responderName: String {
-        if isAttending && !attendeeNames.isEmpty {
-            return attendeeNames[0]
-        } else {
-            return "미응답자"
+        // 1. 별도 저장된 응답자 이름이 있으면 우선 사용
+        if let storedResponderName = responderNameField, !storedResponderName.isEmpty {
+            return storedResponderName
         }
+        
+        // 2. 참석인 경우: 첫 번째 참석자 이름 반환
+        if isAttending && !attendeeNames.isEmpty && !attendeeNames[0].isEmpty {
+            return attendeeNames[0]
+        }
+        
+        // 3. 불참인 경우: attendeeNames의 첫 번째 이름 확인
+        if !isAttending && !attendeeNames.isEmpty && !attendeeNames[0].isEmpty {
+            return attendeeNames[0]
+        }
+        
+        // 4. 모든 경우에 해당하지 않으면 "미응답자"
+        return "미응답자"
     }
 }

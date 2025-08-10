@@ -63,11 +63,16 @@ struct RsvpController: RouteCollection {
         let rsvpRequest = try req.content.decode(RsvpRequest.self)
         try rsvpRequest.validate()
         
-        // 5. 대표 응답자 이름 추출 (첫 번째 참석자 이름)
+       // 5. 대표 응답자 이름 추출 (개선됨 - 불참자 이름 처리)
         let responderName: String
-        if rsvpRequest.isAttending && !rsvpRequest.attendeeNames.isEmpty {
+        if let reqResponderName = rsvpRequest.responderName, !reqResponderName.isEmpty {
+            // 요청에 응답자 이름이 명시적으로 포함된 경우 사용
+            responderName = reqResponderName.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
+        } else if rsvpRequest.isAttending && !rsvpRequest.attendeeNames.isEmpty {
+            // 참석인 경우 첫 번째 참석자 이름 사용
             responderName = rsvpRequest.attendeeNames[0].trimmingCharacters(in: CharacterSet.whitespacesAndNewlines)
         } else {
+            // 모든 경우에 해당하지 않으면 "미응답자"
             responderName = "미응답자"
         }
         
@@ -101,6 +106,7 @@ struct RsvpController: RouteCollection {
                 attendeeNames: rsvpRequest.attendeeNames.map { 
                     $0.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines) 
                 },
+                responderName: responderName, // 새로 추가된 매개변수
                 phoneNumber: rsvpRequest.phoneNumber?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines),
                 message: rsvpRequest.message?.trimmingCharacters(in: CharacterSet.whitespacesAndNewlines),
                 groupID: invitationGroup.id!

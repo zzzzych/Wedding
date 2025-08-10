@@ -111,6 +111,9 @@ struct RsvpRequest: Content {
     /// - true: 참석, false: 불참
     let isAttending: Bool
     
+    /// 응답자 이름 (필수) - 불참인 경우에도 응답한 사람의 이름
+    let responderName: String?
+    
     /// 총 참석 인원 수 (참석인 경우에만 사용)
     /// 불참인 경우 0으로 설정
     let totalCount: Int
@@ -128,6 +131,16 @@ struct RsvpRequest: Content {
     /// 요청 데이터 유효성 검증
     /// - Throws: 유효하지 않은 데이터가 있을 때 ValidationError
     func validate() throws {
+        // 응답자 이름 검증 (참석/불참 관계없이 필수)
+        if let name = responderName {
+            guard !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw ValidationError("응답자 이름은 필수입니다.")
+            }
+            guard name.trimmingCharacters(in: .whitespacesAndNewlines).count >= 2 else {
+                throw ValidationError("응답자 이름은 2글자 이상이어야 합니다.")
+            }
+        }
+        
         // 참석하는 경우 검증
         if isAttending {
             // 총 인원수 검증

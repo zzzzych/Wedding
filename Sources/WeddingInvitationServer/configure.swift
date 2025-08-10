@@ -53,7 +53,9 @@ public func configure(_ app: Application) async throws {
     // ❌ 다음 줄 삭제 - 이미 CreateWeddingSchema에 포함됨
     // app.migrations.add(AddTimestampsToRsvp())                    // 8. RSVP 타임스탬프 추가 (기존)
     app.migrations.add(UpdateRsvpSchemaV3())               // 🆕 8. RSVP 스키마 V3 업데이트
-    
+    // 새로운 마이그레이션 추가
+    app.migrations.add(AddResponderNameToRsvpResponse())
+
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()
     
