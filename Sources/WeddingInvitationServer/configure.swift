@@ -18,9 +18,11 @@ public func configure(_ app: Application) async throws {
     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-make-it-very-long-and-secure"
     app.jwt.signers.use(.hs256(key: jwtSecret))
     
-    // 🌐 CORS 설정 - React 앱에서 API 호출 허용
+    // 🌐 CORS 설정 - 개발환경과 프로덕션 환경 모두 허용
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .custom("https://leelee.kr"),  // ✅ 구체적인 도메인 지정
+        allowedOrigin: .all,  // 🔧 개발 중에는 모든 origin 허용
+        // 또는 구체적으로 지정하려면:
+        // allowedOrigin: .custom("http://localhost:3000,https://leelee.kr"),
         allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .HEAD, .PATCH],
         allowedHeaders: [
             .accept,
@@ -35,7 +37,7 @@ public func configure(_ app: Application) async throws {
             .cacheControl,
             .ifModifiedSince
         ],
-        allowCredentials: true  // ✅ 인증 정보 허용 추가
+        allowCredentials: true  // ✅ 인증 정보 허용
     )
     
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
