@@ -6,7 +6,6 @@
 // 애플리케이션의 서비스와 설정을 구성하는 함수
 public func configure(_ app: Application) async throws {
     // 🗃️ PostgreSQL 데이터베이스 설정
-    // ✅ PostgreSQL 데이터베이스 설정 (SSL 비활성화)
     guard let databaseURL = Environment.get("DATABASE_URL") else {
         fatalError("DATABASE_URL 환경변수가 설정되지 않았습니다.")
     }
@@ -18,11 +17,9 @@ public func configure(_ app: Application) async throws {
     let jwtSecret = Environment.get("JWT_SECRET") ?? "your-256-bit-secret-key-here-make-it-very-long-and-secure"
     app.jwt.signers.use(.hs256(key: jwtSecret))
     
-    // 🌐 CORS 설정 - 개발환경과 프로덕션 환경 모두 허용
+    // 🌐 CORS 설정 - 수정된 버전
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .all,  // 🔧 개발 중에는 모든 origin 허용
-        // 또는 구체적으로 지정하려면:
-        // allowedOrigin: .custom("http://localhost:3000,https://leelee.kr"),
+        allowedOrigin: .all, // 모든 origin 허용 (개발 중)
         allowedMethods: [.GET, .POST, .PUT, .DELETE, .OPTIONS, .HEAD, .PATCH],
         allowedHeaders: [
             .accept,
@@ -37,12 +34,12 @@ public func configure(_ app: Application) async throws {
             .cacheControl,
             .ifModifiedSince
         ],
-        allowCredentials: true  // ✅ 인증 정보 허용
+        allowCredentials: true
     )
     
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
     
-    // CORS 미들웨어를 앱에 추가
+    // CORS 미들웨어를 가장 첫 번째로 추가
     app.middleware.use(corsMiddleware, at: .beginning)
     
     // 🔄 마이그레이션 등록 - 순서대로 실행됩니다
@@ -55,8 +52,6 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(ForceRemoveVenueColumns())                // 7. 강제 컬럼 삭제
     app.migrations.add(AddTimestampsToRsvp())                    // 8. RSVP 타임스탬프 추가 (기존)
     app.migrations.add(UpdateRsvpSchemaV2())                     // 🆕 9. RSVP 스키마 V2 업데이트
-    // 다음 라인들을 삭제해주세요:
-    // app.migrations.add(AddFeatureSettingsToInvitationGroup()) // ❌ 삭제 - CreateWeddingSchema에 이미 포함됨
     
     // 🚀 서버 시작 시 자동으로 마이그레이션 실행
     try await app.autoMigrate()

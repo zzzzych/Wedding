@@ -1,8 +1,8 @@
-// Sources/WeddingInvitationServer/routes.swift
+// Sources/WeddingInvitationServer/routes.swift 파일 수정
 @preconcurrency import Fluent
 @preconcurrency import Vapor
 
-// 🏗️ API 응답을 위한 구조체들
+// 🏗️ API 응답을 위한 구조체들 (기존 유지)
 struct InvitationAPIResponse: Content {
     let groupName: String
     let groupType: String
@@ -25,8 +25,19 @@ struct InvitationFeatures: Content {
     let showCeremonyProgram: Bool
 }
 
+
 // 라우트 설정 함수
 func routes(_ app: Application) throws {
+    
+    // 🔧 모든 OPTIONS 요청에 대한 처리 추가 (CORS 프리플라이트 요청)
+    app.on(.OPTIONS, "**") { req -> Response in
+        let response = Response(status: .ok)
+        response.headers.add(name: .accessControlAllowOrigin, value: "*")
+        response.headers.add(name: .accessControlAllowMethods, value: "GET, POST, PUT, DELETE, OPTIONS, HEAD, PATCH")
+        response.headers.add(name: .accessControlAllowHeaders, value: "Accept, Authorization, Content-Type, Origin, X-Requested-With")
+        response.headers.add(name: .accessControlAllowCredentials, value: "true")
+        return response
+    }
     
     // 기본 루트 - 서버 상태 확인용
     app.get { req async in
@@ -38,6 +49,13 @@ func routes(_ app: Application) throws {
         return "Hello, world!"
     }
     
+    // 🔧 API 헬스체크 엔드포인트 수정 (타입 통일)
+    app.get("api", "health") { req async in
+        return [
+            "status": "healthy", 
+            "timestamp": String(Date().timeIntervalSince1970)
+        ]
+    }
     // 마이그레이션 실행 경로
     app.get("run-migrations") { req async throws -> String in
         try await app.autoMigrate()
@@ -113,17 +131,20 @@ func routes(_ app: Application) throws {
         }
     }
     
-    // ✅ 핵심 수정: API 그룹 생성 (/api/...)
-    let api = app.grouped("api")
-
-    // ✅ 추가: API 그룹 기본 라우트
-    api.get { req async in
-        return ["message": "Wedding Invitation API is running! 💍", "version": "1.0"]
+    // 마이그레이션 실행 경로
+    app.get("run-migrations") { req async throws -> String in
+        try await app.autoMigrate()
+        return "✅ PostgreSQL 마이그레이션이 성공적으로 완료되었습니다!"
     }
-
-    // ✅ 모든 컨트롤러를 /api 그룹 하위에 등록
-    try api.register(collection: InvitationController())
-    try api.register(collection: AdminController())
-    try api.register(collection: RsvpController())
+    
+    // 나머지 기존 코드들은 그대로 유지...
+    
+    // ✅ API 그룹 생성
+    let api = app.grouped("api")
+    
+    // ✅ 컨트롤러들 등록
     try api.register(collection: WeddingController())
+    try api.register(collection: InvitationController())
+    try api.register(collection: RsvpController())
+    try api.register(collection: AdminController())
 }
