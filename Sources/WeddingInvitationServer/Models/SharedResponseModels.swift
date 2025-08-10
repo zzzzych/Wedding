@@ -9,6 +9,21 @@ import Fluent
 import Vapor
 import Foundation
 
+// MARK: - 커스텀 에러 타입
+
+/// 유효성 검증 실패 시 발생하는 에러
+struct ValidationError: Error, LocalizedError {
+    let message: String
+    
+    init(_ message: String) {
+        self.message = message
+    }
+    
+    var errorDescription: String? {
+        return message
+    }
+}
+
 // MARK: - 공통 응답 데이터 모델들
 
 /// 간단한 응답 데이터 구조체 (API 응답용)
@@ -16,24 +31,22 @@ import Foundation
 struct SimpleRsvpResponse: Content {
     /// 응답 고유 ID
     let id: UUID?
-    /// 응답자 이름
+    /// 대표 응답자 이름 (첫 번째 참석자 이름)
     let responderName: String
     /// 참석 여부 (true: 참석, false: 불참)
     let isAttending: Bool
-    /// 성인 참석 인원 수
-    let adultCount: Int
-    /// 자녀 참석 인원 수
-    let childrenCount: Int
+    /// 총 참석 인원 수
+    let totalCount: Int
+    /// 참석자 이름 목록
+    let attendeeNames: [String]
+    /// 전화번호 (선택사항)
+    let phoneNumber: String?
+    /// 추가 메시지 (선택사항)
+    let message: String?
     /// 응답 제출 시간
     let submittedAt: Date?
     /// 응답 수정 시간 (옵셔널)
     let updatedAt: Date?
-    
-    /// 총 참석 인원 수 (계산된 값)
-    /// 성인 + 자녀 인원의 합계를 자동으로 계산합니다
-    var totalCount: Int {
-        return adultCount + childrenCount
-    }
     
     /// RsvpResponse 모델에서 SimpleRsvpResponse 생성
     /// 데이터베이스의 RsvpResponse 객체를 API 응답용 구조체로 변환합니다
@@ -44,8 +57,10 @@ struct SimpleRsvpResponse: Content {
             id: rsvp.id,
             responderName: rsvp.responderName,
             isAttending: rsvp.isAttending,
-            adultCount: rsvp.adultCount,
-            childrenCount: rsvp.childrenCount,
+            totalCount: rsvp.totalCount,
+            attendeeNames: rsvp.attendeeNames,
+            phoneNumber: rsvp.phoneNumber,
+            message: rsvp.message,
             submittedAt: rsvp.createdAt,
             updatedAt: rsvp.updatedAt
         )
@@ -87,6 +102,82 @@ struct SimpleRsvpWithGroupInfo: Content {
                 uniqueCode: rsvp.group.uniqueCode
             )
         )
+    }
+}
+
+/// 참석 여부 응답 제출 요청 데이터 (새 버전)
+struct RsvpRequest: Content {
+    /// 참석 여부 (필수)
+    /// - true: 참석, false: 불참
+    let isAttending: Bool
+    
+    /// 총 참석 인원 수 (참석인 경우에만 사용)
+    /// 불참인 경우 0으로 설정
+    let totalCount: Int
+    
+    /// 참석자 이름 목록 (참석인 경우에만 사용)
+    /// 첫 번째 이름이 대표 응답자가 됨
+    let attendeeNames: [String]
+    
+    /// 전화번호 (선택사항)
+    let phoneNumber: String?
+    
+    /// 추가 메시지 (선택사항)
+    let message: String?
+    
+    /// 요청 데이터 유효성 검증
+    /// - Throws: 유효하지 않은 데이터가 있을 때 ValidationError
+    func validate() throws {
+        // 참석하는 경우 검증
+        if isAttending {
+            // 총 인원수 검증
+            guard totalCount > 0 else {
+                throw ValidationError("참석하는 경우 최소 1명 이상의 인원을 입력해야 합니다.")
+            }
+            
+            guard totalCount <= 10 else {
+                throw ValidationError("참석 인원은 최대 10명까지 가능합니다.")
+            }
+            
+            // 참석자 이름 목록 검증
+            guard attendeeNames.count == totalCount else {
+                throw ValidationError("참석 인원 수와 이름 개수가 일치하지 않습니다.")
+            }
+            
+            // 각 이름의 유효성 검증
+            for (index, name) in attendeeNames.enumerated() {
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedName.isEmpty else {
+                    throw ValidationError("\(index + 1)번째 참석자 이름을 입력해주세요.")
+                }
+                
+                guard trimmedName.count <= 50 else {
+                    throw ValidationError("\(index + 1)번째 참석자 이름은 50자 이내여야 합니다.")
+                }
+            }
+        } else {
+            // 불참하는 경우 검증
+            guard totalCount == 0 else {
+                throw ValidationError("불참하는 경우 인원수는 0이어야 합니다.")
+            }
+            
+            guard attendeeNames.isEmpty else {
+                throw ValidationError("불참하는 경우 참석자 이름을 입력할 수 없습니다.")
+            }
+        }
+        
+        // 전화번호 검증 (선택사항)
+        if let phone = phoneNumber, !phone.isEmpty {
+            let trimmedPhone = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmedPhone.count <= 20 else {
+                throw ValidationError("전화번호는 20자 이내여야 합니다.")
+            }
+        }
+        
+        // 메시지 길이 검증 (선택사항)
+        if let message = message, message.count > 200 {
+            throw ValidationError("메시지는 200자 이내여야 합니다.")
+        }
     }
 }
 

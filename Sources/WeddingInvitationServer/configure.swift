@@ -49,8 +49,10 @@ public func configure(_ app: Application) async throws {
     app.migrations.add(AddRoleToAdminUser())                     // 3. role 컬럼 추가
     app.migrations.add(AddTimestampsToAdminUser())               // 4. AdminUser 타임스탬프 컬럼 추가
     app.migrations.add(UpdateExistingAdminRole())                // 5. 기존 관리자에 role 설정
-    app.migrations.add(RemoveVenuePhoneFromWeddingInfo())        // 🆕 6. venue_phone 컬럼 삭제
-    app.migrations.add(ForceRemoveVenueColumns())                // 🔥 7. 강제 컬럼 삭제
+    app.migrations.add(RemoveVenuePhoneFromWeddingInfo())        // 6. venue_phone 컬럼 삭제
+    app.migrations.add(ForceRemoveVenueColumns())                // 7. 강제 컬럼 삭제
+    app.migrations.add(AddTimestampsToRsvp())                    // 8. RSVP 타임스탬프 추가 (기존)
+    app.migrations.add(UpdateRsvpSchemaV2())                     // 🆕 9. RSVP 스키마 V2 업데이트
     // 다음 라인들을 삭제해주세요:
     // app.migrations.add(AddFeatureSettingsToInvitationGroup()) // ❌ 삭제 - CreateWeddingSchema에 이미 포함됨
     

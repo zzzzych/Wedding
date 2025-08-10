@@ -185,9 +185,7 @@ struct InvitationController: RouteCollection {
         return allGroups
     }
     
-    /// 특정 그룹 상세 조회 (관리자용)
-    /// - Method: `GET`
-    /// - Path: `/api/admin/groups/:groupId`
+    /// 특정 그룹의 상세 정보 조회 (관리자용)
     func getGroup(req: Request) async throws -> GroupDetailResponse {
         // 1. 그룹 ID 파라미터 추출 및 검증
         guard let groupId = req.parameters.get("groupId", as: UUID.self) else {
@@ -208,13 +206,13 @@ struct InvitationController: RouteCollection {
         // 4. 응답 데이터 변환
         let responseData = responses.map { SimpleRsvpResponse.from($0) }
         
-        // 5. 통계 계산
+        // 5. 통계 계산 (새로운 데이터 구조에 맞게 수정)
         let attendingResponses = responses.filter { $0.isAttending }
         let statistics = GroupStatistics(
             totalResponses: responses.count,
             attendingCount: attendingResponses.count,
-            totalAdults: attendingResponses.reduce(0) { $0 + $1.adultCount },
-            totalChildren: attendingResponses.reduce(0) { $0 + $1.childrenCount }
+            totalAdults: 0, // 더 이상 사용하지 않음
+            totalChildren: 0 // 더 이상 사용하지 않음
         )
 
         req.logger.info("그룹 상세 조회: '\(group.groupName)' (응답 \(responses.count)개)")

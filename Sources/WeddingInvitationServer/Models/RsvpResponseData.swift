@@ -9,29 +9,29 @@ import Fluent
 import Vapor
 import Foundation
 
-/// 참석 응답 데이터 (API 응답용)
+/// 참석 응답 데이터 (API 응답용) - 새 버전
 /// 이 구조체는 데이터베이스의 RsvpResponse를 API 응답용으로 변환할 때 사용됩니다
 struct RsvpResponseData: Content {
     /// 응답 고유 ID
     let id: UUID?
     
-    /// 응답자 이름
+    /// 대표 응답자 이름 (첫 번째 참석자 이름)
     let responderName: String
     
     /// 참석 여부 (true: 참석, false: 불참)
     let isAttending: Bool
     
-    /// 성인 참석 인원 수
-    let adultCount: Int
+    /// 총 참석 인원 수
+    let totalCount: Int
     
-    /// 자녀 참석 인원 수
-    let childrenCount: Int
+    /// 참석자 이름 목록
+    let attendeeNames: [String]
     
-    /// 총 참석 인원 수 (성인 + 자녀)
-    /// 계산된 프로퍼티로 성인과 자녀 인원의 합계를 자동으로 반환합니다
-    var totalCount: Int {
-        return adultCount + childrenCount
-    }
+    /// 전화번호 (선택사항)
+    let phoneNumber: String?
+    
+    /// 추가 메시지 (선택사항)
+    let message: String?
     
     /// 응답 제출 시간
     let submittedAt: Date?
@@ -48,8 +48,10 @@ struct RsvpResponseData: Content {
             id: rsvp.id,
             responderName: rsvp.responderName,
             isAttending: rsvp.isAttending,
-            adultCount: rsvp.adultCount,
-            childrenCount: rsvp.childrenCount,
+            totalCount: rsvp.totalCount,
+            attendeeNames: rsvp.attendeeNames,
+            phoneNumber: rsvp.phoneNumber,
+            message: rsvp.message,
             submittedAt: rsvp.createdAt,
             updatedAt: rsvp.updatedAt
         )
@@ -97,6 +99,3 @@ struct GroupInfo: Content {
     /// 고유 접근 코드
     let uniqueCode: String
 }
-
-// 주의: RsvpSummary는 SharedResponseModels.swift에서 정의되어 있으므로
-// 여기서는 제거합니다. 중복 선언을 방지하기 위함입니다.
