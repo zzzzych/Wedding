@@ -16,7 +16,7 @@ struct UpdateRsvpSchemaV2: Migration {
         // 1. 새로운 컬럼들 추가
         return database.schema(RsvpResponse.schema)
             .field("total_count", .int, .required, .custom("DEFAULT 0"))           // 총 참석 인원
-            .field("attendee_names", .json, .required, .custom("DEFAULT '[]'"))    // 참석자 이름 배열
+            .field("attendee_names", .array(of: .string), .required, .custom("DEFAULT '{}'")) // 참석자 이름 배열
             .field("phone_number", .string)                                        // 전화번호 (선택사항)
             .field("message", .string)                                             // 메시지 (선택사항)
             .update()
